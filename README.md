@@ -1,6 +1,6 @@
 # Data-streamer
 A python benchmarking tool for testing different analytic processes and their suitability for use in real time data stream processing.
-This project uses pybind11 to connect between cpp and python code to build a truely multi-threaded application within a python wrapper.
+This project uses [pybind11](https://github.com/pybind/pybind11) to connect between cpp and python code to build a truely multi-threaded application within a python wrapper.
 This means that your inputs, outputs and user interface is all handled by python and subsquentialy your favourite brand of data analysis and visulization tools. While the actual data processing is done by worker threads setup within a cpp class object. 
 
 
