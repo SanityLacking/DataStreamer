@@ -26,3 +26,7 @@ To build this code you need to have two additional files, ```Python.h``` and ```
      **DataStreamer/Datasets** the folder where we can load our dataset csv from. Currently it only contains the kdd99 dataset for testing with.\
 **DataStreamerCpp** This is the cpp files for the application that are called by the python wrapper to perform the actual processing.
     *Module.cpp* the main file for this project, contains the cpp class that all the work is done through.
+
+
+Links\
+[Visual Studio + Pybind11](https://docs.microsoft.com/en-us/visualstudio/python/working-with-c-cpp-python-in-visual-studio?view=vs-2019)
