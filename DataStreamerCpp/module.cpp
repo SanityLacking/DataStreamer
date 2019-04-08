@@ -23,7 +23,6 @@
 namespace py = pybind11;
 
 
-std::mutex readerMutex;
 /*
 int dataRead(std::vector<std::string> &dataset, std::vector<std::string> &inputStack) {
 	//take line from dataset and put it on input stack. then sleep
@@ -119,7 +118,10 @@ private:
 	int x1 = 1;
 	int y1 = 1;
 
+	//std::mutex readerMutex;
 	std::mutex classMutex; //very important step, make sure your mutexes are defined inside your class so that your classbased functions can see them.
+	std::mutex inputQueueMutex;
+	std::mutex outputQueueMutex;
 	int dataR(std::vector<std::string> &dataset); //threaded data reader function
 	int dataReader(std::deque<std::string> &dataset, std::deque<std::string> &inputQueue);
 	std::deque<std::string> inputStackTiming;
@@ -212,12 +214,12 @@ void datasetStream::startCounter(int x)
 		//thread1.detach();
 	}
 }
-int datasetStream::getCounter()
-{
-	std::lock_guard<std::mutex> guard(readerMutex);
-	int x = val;
-	return x;
-}
+//int datasetStream::getCounter()
+//{
+//	std::lock_guard<std::mutex> guard(readerMutex);
+//	int x = val;
+//	return x;
+//}
 /* Get current results that have been processed. if clear is true, will remove all sent results and empty the results vector.
 */
 std::deque< std::string> datasetStream::getResults(bool clear)
@@ -225,30 +227,32 @@ std::deque< std::string> datasetStream::getResults(bool clear)
 	std::deque< std::string> results;
 	if (true) {
 		// TODO mutex guard. is this a shallow or hard copy? i think its a hard copy
-		std::lock_guard<std::mutex> guard(classMutex);
+		std::lock_guard<std::mutex> guard(outputQueueMutex);
 		results = outputQueue;
 		if (clear) {
 			outputQueue.clear();
 		}
 	}
 	return results;
+
+
 }
 
 int datasetStream::getCurrentInputCount()
 {
 	int result = -1;
-	if (true) {
-		std::lock_guard<std::mutex> guard(classMutex);
-		result = inputQueue.size();
-		//result = 1;
-	}
+	//if (true) {
+	//	std::lock_guard<std::mutex> guard(inputQueueMutex);
+	//	result = inputQueue.size();
+	//	//result = 1;
+	//}
 	return result;
 }
 std::deque< std::string> datasetStream::getCurrentInput()
 {
 	std::deque< std::string> results = {};
 	if (true) {
-		std::lock_guard<std::mutex> guard(classMutex);
+		std::lock_guard<std::mutex> guard(inputQueueMutex);
 		results = inputQueue;
 	}
 	return results;
@@ -261,7 +265,7 @@ int datasetStream::processData() {
 	while (true) { //TODO, come up with a better loop check for this.
 		//check for input rows to process
 		{
-			std::lock_guard<std::mutex> guard(classMutex);
+			std::lock_guard<std::mutex> guard(inputQueueMutex);
 			row = inputQueue.front();
 			inputQueue.pop_front();
 		}
@@ -270,7 +274,11 @@ int datasetStream::processData() {
 			//double result = knn.KNNprocess(row);
 			//put results in the outputStack
 			std::string result = row;
-			outputQueue.push_back(result);
+			{
+				std::lock_guard<std::mutex> guard(outputQueueMutex);
+				outputQueue.push_back(result);
+			}
+			
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
 	}
@@ -288,18 +296,18 @@ int datasetStream::loadbalance() {
 		case 1: {
 			//option one, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
 			//std::vector<string>(inputStack.end()-MAXLOAD, inputStack.end()).swap(inputStack);
-			std::lock_guard<std::mutex> guard(classMutex);
+			std::lock_guard<std::mutex> guard(inputQueueMutex);
 			inputQueue.erase(inputQueue.begin(), (inputQueue.end() - MAXLOAD) - 1);
 			break;
 		}case 2: {
 			//option two, remove newest elements
-			std::lock_guard<std::mutex> guard(classMutex);
+			std::lock_guard<std::mutex> guard(inputQueueMutex);
 			while (inputQueue.size() > MAXLOAD) {
 				inputQueue.pop_back();
 			}
 			break;
 		}case 3: { //option two.2 remove newest elements in one go.
-			std::lock_guard<std::mutex> guard(classMutex);
+			std::lock_guard<std::mutex> guard(inputQueueMutex);
 			inputQueue.resize(MAXLOAD);
 			break;
 		}case 4: {
@@ -318,7 +326,7 @@ int datasetStream::dataReader(std::deque<std::string> &dataset, std::deque<std::
 	while (!dataset.empty())
 	{
 		if (true) {
-			std::lock_guard<std::mutex> guard(classMutex);
+			std::lock_guard<std::mutex> guard(inputQueueMutex);
 			inputQueue.push_back(dataset.front());
 			dataset.pop_front();
 		}
@@ -332,7 +340,7 @@ int datasetStream::dataR(std::vector<std::string> &dataset) {
 	while (!dataset.empty())
 	{
 		if (true) {
-			std::lock_guard<std::mutex> guard(classMutex);
+			std::lock_guard<std::mutex> guard(inputQueueMutex);
 			inputStack.push_back(dataset.front());
 			dataset.erase(dataset.begin());
 		}
@@ -346,40 +354,19 @@ int datasetStream::dataR(std::vector<std::string> &dataset) {
 
 
 
-const double e = 2.7182818284590452353602874713527;
-
-double sinh_impl(double x) {
-	return (1 - pow(e, (-2 * x))) / (2 * pow(e, -x));
-}
-
-double cosh_impl(double x) {
-	return (1 + pow(e, (-2 * x))) / (2 * pow(e, -x));
-}
-
-double tanh_impl(double x) {
-	return sinh_impl(x) / cosh_impl(x);
-}
-
 
 PYBIND11_MODULE(DataStreamerCpp, m) {
-	m.def("fast_tanh2", &tanh_impl, R"pbdoc(
-        Compute a hyperbolic tangent of a single argument expressed in radians.
-    )pbdoc");
-
 	py::class_<datasetStream>(m, "dsStream")
 		.def(py::init())
 		.def("sum", &datasetStream::sum, "sum to check its working")
-		.def("startCounter", &datasetStream::startCounter, "thread Start")
-		.def("getCounter", &datasetStream::getCounter, "thread Access")
+		.def("startCounter", &datasetStream::startCounter, "thread Start")		
 		.def("getResults", &datasetStream::getResults, "get the results", py::arg("clear") = false)
 		.def("getCurrentInput", &datasetStream::getCurrentInput)
 		.def("getCurrentInputCount", &datasetStream::getCurrentInputCount)
 		.def("initReaders", &datasetStream::initReaders)
 		.def("initReadersDebug", &datasetStream::initReadersDebug);
 
-	m.def("fast_tanh2", &tanh_impl, R"pbdoc(
-        Compute a hyperbolic tangent of a single argument expressed in radians.
-    )pbdoc");
+	
 #ifdef VERSION_INFO
 	m.attr("__version__") = VERSION_INFO;
 #else

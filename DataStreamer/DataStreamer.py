@@ -42,10 +42,13 @@ def startDataStream():
 
 
         #currently the code is breaking here, TODO figure out why getCurrentInputCount is breaking.
+        #error is in the processThread in the cpp file.
+        #I think the problem is there is no error checking for running front() and pop_front() when the dqueue is empty. TODO add in try catch blocks to fix this.
         try:
             for i in range (10):
-                print("inputCount: {}".format(cppProcess.getCurrentInputCount()))
-                time.sleep(0.1)
+                #print("inputCount: {}".format(cppProcess.getCurrentInputCount()))
+                print(i)
+                time.sleep(0.01)
         except:
             print("it broke again")
         
