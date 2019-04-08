@@ -34,16 +34,6 @@
       <Project>{c20338f0-77bc-4ab9-8637-bc3df7c1ca8f}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\DataStream\DataStream.vcxproj">
-      <Name>DataStream</Name>
-      <Project>{10bf0da1-d3e2-4e85-8777-700d2c0d2eb2}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\superfastcode\superfastcode.vcxproj">
-      <Name>superfastcode</Name>
-      <Project>{97fac9b2-39a0-4db8-b558-d151a41713c1}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

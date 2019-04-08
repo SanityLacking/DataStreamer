@@ -181,7 +181,7 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 
 	return (int)dataset.size();
 }
-/* does exactly the same thing as InitReaders, but returns the char *  for debugging.*/
+// does exactly the same thing as InitReaders, but returns the char *  for debugging. DEPRECATED
 std::string  datasetStream::initReadersDebug(std::vector<std::string>  string_list) {
 	try
 	{
@@ -198,7 +198,7 @@ std::string  datasetStream::initReadersDebug(std::vector<std::string>  string_li
 	return "everything is fine";
 }
 
-//simple function to test the class is working
+//simple function to test the class is working TEST FUNCTION
 int datasetStream::sum(int n)
 {
 	outputStack.push_back("changed");
