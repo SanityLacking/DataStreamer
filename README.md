@@ -16,6 +16,10 @@ First Build the cpp code using pybind11
 Then Run the Datastreamer python file:
 ```Python Datastreamer.py```
 
+To build this code you need to have two additional files, ```Python.h``` and ```Python36.lib```. These files shoudl be in your visual studio shared folder, somewhere like this: ```C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python36_64\``` and in the *include* and *libs* folders respectively. If your copy of these files are somewhere else, you can point visual studio to them using properties menu for the DataStreamerCpp project in the solution window.
 
 
+Projects:
+**DataStreamer** This project is the python wrapper project that encompasses the entire application. 
 
+**DataStreamerCpp** This is the cpp files for the application that are called by the python wrapper to perform the actual processing.
