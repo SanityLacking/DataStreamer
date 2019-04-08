@@ -8,10 +8,10 @@ import numpy as np
 import matplotlib as plt
 import pandas as pd
 import sys
-from superfastcode import dsStream
+from DataStreamerCpp import dsStream
 
 cppProcess = dsStream()
-CSVfileName ="datasets/kdd99-unsupervised-ad.csv"
+CSVfileName ="../datasets/kdd99-unsupervised-ad.csv"
 MAXROWS = 100
 #COUNT = 500000  # Change this value depending on the speed of your computer
 #DATA = list(islice(iter(lambda: (random() - 0.5) * 3.0, None), COUNT))

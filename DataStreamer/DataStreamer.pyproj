@@ -29,6 +29,11 @@
     <InterpreterReference Include="CondaEnv|CondaEnv|py36" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DataStreamerCpp\DataStreamerCpp.vcxproj">
+      <Name>DataStreamerCpp</Name>
+      <Project>{c20338f0-77bc-4ab9-8637-bc3df7c1ca8f}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\DataStream\DataStream.vcxproj">
       <Name>DataStream</Name>
       <Project>{10bf0da1-d3e2-4e85-8777-700d2c0d2eb2}</Project>

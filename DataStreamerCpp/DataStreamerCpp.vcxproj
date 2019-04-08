@@ -20,8 +20,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{97FAC9B2-39A0-4DB8-B558-D151A41713C1}</ProjectGuid>
-    <RootNamespace>superfastcode</RootNamespace>
+    <ProjectGuid>{C20338F0-77BC-4AB9-8637-BC3DF7C1CA8F}</ProjectGuid>
+    <RootNamespace>DataStreamerCpp</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
     <ProjectName>DataStreamerCpp</ProjectName>
   </PropertyGroup>
@@ -131,7 +131,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pybind11\pybind11.h" />
-    <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Setup.py" />

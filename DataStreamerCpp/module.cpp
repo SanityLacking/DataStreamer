@@ -33,7 +33,7 @@ int dataRead(std::vector<std::string> &dataset, std::vector<std::string> &inputS
 			inputStack.push_back(dataset.front());
 			dataset.erase(dataset.begin());
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
+		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep
 	}
 
 	return 0;
@@ -48,9 +48,9 @@ int threadSum(int & x) {
 			std::lock_guard<std::mutex> guard(readerMutex);
 			x = x + 2;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
+		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep
 	}
-	
+
 
 	return x;
 }
@@ -65,7 +65,7 @@ int threadCounter(int & x, int & y) {
 			std::lock_guard<std::mutex> guard(readerMutex);
 			x = x + y;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
+		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep
 	}
 
 	return 0;
@@ -89,7 +89,7 @@ public:
 	//int initReaders(int length, const char ** string_list);
 	int initReaders(std::vector<std::string>  str);
 	std::string initReadersDebug(std::vector<std::string>  str);
-	
+
 	const int READERINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
 	const int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
 	const int LOADBALANCEINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
@@ -100,14 +100,14 @@ public:
 							//option 2, remove newest elements	
 							//option 3 remove newest elements in one go.
 							//option 4 no balancer engaged.
-	
-	
+
+
 
 private:
 	bool starter;
 	std::vector<std::string> dataset = {}; //the initial load location of the dataset, does not get changed after it is loaded.
 	std::deque<std::string> datasetQueue = {}; //the queue of the initial dataset, passed to the worker threads to be inserted into the input queue sequentially.
-	
+
 	std::vector<std::string> inputStack = {}; //stack for the incoming reads to be placed by the datareader threads	
 	std::deque<std::string> inputQueue = {}; //the queue of the input data to be processed. this is separate then the dataset queue to simulate incomming input load.
 
@@ -136,7 +136,7 @@ datasetStream::datasetStream()
 	//readerPool = new ThreadPool readerPool(4);
 }
 /* read in the input data and stores it. Initializes the threaded datareaders. */
-int datasetStream::initReaders(std::vector<std::string>  string_list) 
+int datasetStream::initReaders(std::vector<std::string>  string_list)
 {
 	dataset = string_list; //set the dataset to process to the passed list.
 	copy(dataset.begin(), dataset.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
@@ -150,7 +150,7 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 	//knn.initKnn(trainingSet);
 
 
-	
+
 	//create thread of dataReaders
 	//datareaders each take a line of input and put it in the IN pile. 
 	// the loadbalancer makes sure the IN pile isn't too big. Load balancer is a separate thread that constantly monitors the IN pile.
@@ -158,7 +158,7 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 	// getResults function returns any data that is in the OUT pile to the python caller for them to display.
 
 	// start worker threads to share the dataset queue and move it to the input queue
-	for(int i = 0; i < MAXREADERS; i++){
+	for (int i = 0; i < MAXREADERS; i++) {
 		std::thread dataReaderThread(&datasetStream::dataReader, this, std::ref(datasetQueue), std::ref(inputQueue));
 		dataReaderThread.detach();
 	}
@@ -207,7 +207,7 @@ int datasetStream::sum(int n)
 void datasetStream::startCounter(int x)
 {
 	val = x;
-	for (int i = 0; i < MAXREADERS; i ++) {
+	for (int i = 0; i < MAXREADERS; i++) {
 		//std::thread thread1(threadSum, std::ref(val));
 		//thread1.detach();
 	}
@@ -215,7 +215,7 @@ void datasetStream::startCounter(int x)
 int datasetStream::getCounter()
 {
 	std::lock_guard<std::mutex> guard(readerMutex);
-	int x = val;	
+	int x = val;
 	return x;
 }
 /* Get current results that have been processed. if clear is true, will remove all sent results and empty the results vector.
@@ -250,7 +250,7 @@ std::deque< std::string> datasetStream::getCurrentInput()
 	if (true) {
 		std::lock_guard<std::mutex> guard(classMutex);
 		results = inputQueue;
-	}	
+	}
 	return results;
 }
 
@@ -264,7 +264,7 @@ int datasetStream::processData() {
 			std::lock_guard<std::mutex> guard(classMutex);
 			row = inputQueue.front();
 			inputQueue.pop_front();
-		}		
+		}
 		if (!row.empty()) {
 			//do some processing
 			//double result = knn.KNNprocess(row);
@@ -361,7 +361,7 @@ double tanh_impl(double x) {
 }
 
 
-PYBIND11_MODULE(superfastcode, m) {
+PYBIND11_MODULE(DataStreamerCpp, m) {
 	m.def("fast_tanh2", &tanh_impl, R"pbdoc(
         Compute a hyperbolic tangent of a single argument expressed in radians.
     )pbdoc");
