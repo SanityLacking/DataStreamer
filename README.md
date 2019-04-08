@@ -23,6 +23,6 @@ To build this code you need to have two additional files, ```Python.h``` and ```
 
 **DataStreamer** This project is the python wrapper project that encompasses the entire application. 
     *DataStreamer.py* the main python file for the application. Run this file to begin the application outside of visual studio.
-
+    **DataStreamer/Datasets** the folder where we can load our dataset csv from. Currently it only contains the kdd99 dataset for testing with.
 **DataStreamerCpp** This is the cpp files for the application that are called by the python wrapper to perform the actual processing.
     *Module.cpp* the main file for this project, contains the cpp class that all the work is done through.
