@@ -171,8 +171,8 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 	loadBalancerThread.detach();
 
 	// start processor thread
-	std::thread processorThread(&datasetStream::processData, this);
-	processorThread.detach();
+	//std::thread processorThread(&datasetStream::processData, this);
+	//processorThread.detach();
 
 
 	/*istringstream iss(string_list);
@@ -241,11 +241,11 @@ std::deque< std::string> datasetStream::getResults(bool clear)
 int datasetStream::getCurrentInputCount()
 {
 	int result = -1;
-	//if (true) {
-	//	std::lock_guard<std::mutex> guard(inputQueueMutex);
-	//	result = inputQueue.size();
-	//	//result = 1;
-	//}
+	if (true) {
+		std::lock_guard<std::mutex> guard(inputQueueMutex);
+		result = inputQueue.size();
+		//result = 1;
+	}
 	return result;
 }
 std::deque< std::string> datasetStream::getCurrentInput()
