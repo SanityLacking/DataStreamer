@@ -12,7 +12,7 @@ from DataStreamerCpp import dsStream  #custom module that wraps the cpp file api
 
 cppProcess = dsStream()
 CSVfileName ="../datasets/kdd99-unsupervised-ad.csv"
-MAXROWS = 100
+MAXROWS = 10
 
 
 def startDataStream():   

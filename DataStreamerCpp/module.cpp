@@ -171,8 +171,8 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 	loadBalancerThread.detach();
 
 	// start processor thread
-	//std::thread processorThread(&datasetStream::processData, this);
-	//processorThread.detach();
+	std::thread processorThread(&datasetStream::processData, this);
+	processorThread.detach();
 
 
 	/*istringstream iss(string_list);
@@ -263,11 +263,14 @@ int datasetStream::processData() {
 	std::string row;
 	//bool continue = 
 	while (true) { //TODO, come up with a better loop check for this.
+		row.clear();
 		//check for input rows to process
 		{
 			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			row = inputQueue.front();
-			inputQueue.pop_front();
+			if (!inputQueue.empty()) {
+				row = inputQueue.front();
+				inputQueue.pop_front();
+			}
 		}
 		if (!row.empty()) {
 			//do some processing
