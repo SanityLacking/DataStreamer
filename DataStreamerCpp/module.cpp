@@ -293,31 +293,33 @@ int datasetStream::processData() {
 
 // TODO make this function take a pointer argument so it could be run using a different stack rather then the class variable.
 int datasetStream::loadbalance() {
-	if (inputStack.size() < MAXLOAD) {
-		switch (LBMETHOD)
-		{
-		case 1: {
-			//option one, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
-			//std::vector<string>(inputStack.end()-MAXLOAD, inputStack.end()).swap(inputStack);
-			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			inputQueue.erase(inputQueue.begin(), (inputQueue.end() - MAXLOAD) - 1);
-			break;
-		}case 2: {
-			//option two, remove newest elements
-			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			while (inputQueue.size() > MAXLOAD) {
-				inputQueue.pop_back();
+	{
+		std::lock_guard<std::mutex> guard(inputQueueMutex); //lock is done here to encompass the size check.
+		if (inputQueue.size() < MAXLOAD) {
+			switch (LBMETHOD)
+			{
+			case 1: {
+				//option one, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
+				//std::vector<string>(inputStack.end()-MAXLOAD, inputStack.end()).swap(inputStack);
+				inputQueue.erase(inputQueue.begin(), (inputQueue.end() - MAXLOAD) - 1);
+				break;
+			}case 2: {
+				//option two, remove newest elements
+				//std::lock_guard<std::mutex> guard(inputQueueMutex);
+				while (inputQueue.size() > MAXLOAD) {
+					inputQueue.pop_back();
+				}
+				break;
+			}case 3: { //option two.2 remove newest elements in one go.
+				//std::lock_guard<std::mutex> guard(inputQueueMutex);
+				inputQueue.resize(MAXLOAD);
+				break;
+			}case 4: {
+				//no balancer engaged.
+				break;
+			}default:
+				break;
 			}
-			break;
-		}case 3: { //option two.2 remove newest elements in one go.
-			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			inputQueue.resize(MAXLOAD);
-			break;
-		}case 4: {
-			//no balancer engaged.
-			break;
-		}default:
-			break;
 		}
 	}
 	return 0;
