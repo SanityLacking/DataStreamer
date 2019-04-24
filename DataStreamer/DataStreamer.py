@@ -10,6 +10,8 @@ import pandas as pd
 import sys
 from DataStreamerCpp import dsStream  #custom module that wraps the cpp file api.
 from matplotlib import interactive
+import datetime as dt
+import matplotlib.animation as animation
 interactive(True)
 
 
@@ -25,6 +27,31 @@ def update_line(hl, new_data):
     plt.draw()
 
 
+
+
+    # This function is called periodically from FuncAnimation
+def animate(i, xs, ys):
+
+    # Read temperature (Celsius) from TMP102
+    temp_c = round(tmp102.read_temp(), 2)
+
+    # Add x and y to lists
+    xs.append(dt.datetime.now().strftime('%H:%M:%S.%f'))
+    ys.append(temp_c)
+
+    # Limit x and y lists to 20 items
+    xs = xs[-20:]
+    ys = ys[-20:]
+
+    # Draw x and y lists
+    ax.clear()
+    ax.plot(xs, ys)
+
+    # Format plot
+    plt.xticks(rotation=45, ha='right')
+    plt.subplots_adjust(bottom=0.30)
+    plt.title('TMP102 Temperature over Time')
+    plt.ylabel('Temperature (deg C)')
 
 def startDataStream():   
     count = 0
@@ -62,13 +89,30 @@ def startDataStream():
         #inputCount = pd.DataFrame([])
 
         hl, = plt.plot([],[])
+        # Data for plotting
+        t = np.arange(0.0, 2.0, 0.01)
+        s = 1 + np.sin(2 * np.pi * t)
 
+        fig, ax = plt.subplots()
+        ax.plot(t, s)
 
-        inputSeries = pd.DataFrame
-        for i in range (1000):
-            inputCount = pd.DataFrame({"input":cppProcess.getCurrentInputCount()})
-            
-            update_line(hl, inputCount)
+        ax.set(xlabel='time (s)', ylabel='voltage (mV)',title='About as simple as it gets, folks')
+        ax.grid()
+
+        plt.show()
+        #input()
+        #inputSeries = pd.DataFrame
+        #for i in range (1000):
+         
+        #inputCount = pd.DataFrame({"input":cppProcess.getCurrentInputCount()})                
+        #update_line(hl, inputCount)
+        # Create figure for plotting
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        xs = []
+        ys = []
+        ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=1000)
+        time.sleep(10)
         ### Results ###
         results = cppProcess.getResults()
         print("return results: {}".format(results))                         
@@ -80,7 +124,6 @@ def startDataStream():
         except: 
             print("error: results not in a csv format.")
         
-
 
 
 if __name__ == "__main__":

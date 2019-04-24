@@ -90,7 +90,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python36_64\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Microsoft Visual Studio\Shared\Python36_64\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python36_64\libs</AdditionalLibraryDirectories>
@@ -118,7 +118,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Microsoft Visual Studio\Shared\Python36_64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\Microsoft Visual Studio\Shared\Python36_64\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -127,9 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="htm.cpp" />
     <ClCompile Include="module.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="htm.h" />
     <ClInclude Include="pybind11\pybind11.h" />
   </ItemGroup>
   <ItemGroup>

@@ -87,6 +87,7 @@ public:
 	int getCurrentInputCount();
 	//int initReaders(int length, const char ** string_list);
 	int initReaders(std::vector<std::string>  str);
+	bool checkComplete();
 	std::string initReadersDebug(std::vector<std::string>  str);
 
 	const int READERINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
@@ -110,7 +111,8 @@ private:
 	std::vector<std::string> inputStack = {}; //stack for the incoming reads to be placed by the datareader threads	
 	std::deque<std::string> inputQueue = {}; //the queue of the input data to be processed. this is separate then the dataset queue to simulate incomming input load.
 
-
+	bool JobComplete = false;
+	bool ProcessComplete = false;
 	std::vector<std::string> outputStack = {};	 //output stack of all processed elements
 	std::deque<std::string> outputQueue = {};	//output queue to be passed back to the calling program
 
@@ -178,10 +180,27 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 	/*istringstream iss(string_list);
 	while (std::getline(getline(ss, item, ','))
 	{
+
+
 		m_vecFields.push_back(item);
 	}*/
 
 	return (int)dataset.size();
+}
+
+// return bool to check if processing is complete. 
+bool datasetStream::checkComplete()
+{
+
+	if (datasetQueue.empty() && inputQueue.empty() && ProcessComplete){
+		JobComplete = true;
+	}
+	else {
+		JobComplete = false;
+	}
+
+
+	return ProcessComplete;
 }
 // does exactly the same thing as InitReaders, but returns the char *  for debugging. DEPRECATED
 std::string  datasetStream::initReadersDebug(std::vector<std::string>  string_list) {
@@ -261,8 +280,9 @@ std::deque< std::string> datasetStream::getCurrentInput()
 
 int datasetStream::processData() {
 	std::string row;
-	//bool continue = 
+	
 	while (true) { //TODO, come up with a better loop check for this.
+		
 		row.clear();
 		//check for input rows to process
 		{
@@ -273,6 +293,7 @@ int datasetStream::processData() {
 			}
 		}
 		if (!row.empty()) {
+			ProcessComplete = false;
 			//do some processing
 			//double result = knn.KNNprocess(row);
 			//put results in the outputStack
@@ -283,6 +304,7 @@ int datasetStream::processData() {
 			}
 			
 		}
+		ProcessComplete = true;
 		std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
 	}
 	return 0;
