@@ -12,7 +12,11 @@ from DataStreamerCpp import dsStream  #custom module that wraps the cpp file api
 from matplotlib import interactive
 import datetime as dt
 import matplotlib.animation as animation
+from pylive import live_plotter
 interactive(True)
+
+import seaborn as sns
+import matplotlib
 
 
 cppProcess = dsStream()
@@ -29,15 +33,17 @@ def update_line(hl, new_data):
 
 
 
+
+
     # This function is called periodically from FuncAnimation
 def animate(i, xs, ys):
 
     # Read temperature (Celsius) from TMP102
-    temp_c = round(tmp102.read_temp(), 2)
+    #temp_c = round(tmp102.read_temp(), 2)
 
     # Add x and y to lists
     xs.append(dt.datetime.now().strftime('%H:%M:%S.%f'))
-    ys.append(temp_c)
+    #ys.append(temp_c)
 
     # Limit x and y lists to 20 items
     xs = xs[-20:]
@@ -74,6 +80,21 @@ def startDataStream():
         sent = cppProcess.initReaders(inputFile)
         print("initReader {}".format(sent))
         
+        print(cppProcess.checkComplete())
+        count =0
+        size = 100
+        x_vec = np.linspace(0,1,size+1)[0:-1]
+        #y_vec = np.random.randn(len(x_vec))
+        #x_vec = np.zeros(shape=(1,1))
+        y_vec = np.zeros(shape=(100,1))
+        line1 = []
+        fig=plt.figure(figsize=(13,6))
+        while cppProcess.checkComplete() != True:            
+            print('currently processing input {}...\r'.format(cppProcess.getResultsCount()), end ="")            
+            rand_val = np.random.randn(1)
+            y_vec[-1] = rand_val
+            line1 = live_plotter(x_vec,y_vec,line1, figure=fig)
+            y_vec = np.append(y_vec[1:],0.0)
         
         #time.sleep(1) #apparently using a sleep breaks things for some reason? no idea why.
         #for i in range (1000):
@@ -88,31 +109,33 @@ def startDataStream():
             #    time.sleep(0.01)
         #inputCount = pd.DataFrame([])
 
-        hl, = plt.plot([],[])
-        # Data for plotting
-        t = np.arange(0.0, 2.0, 0.01)
-        s = 1 + np.sin(2 * np.pi * t)
+        #hl, = plt.plot([],[])
+        ## Data for plotting
+        #t = np.arange(0.0, 2.0, 0.01)
+        #s = 1 + np.sin(2 * np.pi * t)
 
-        fig, ax = plt.subplots()
-        ax.plot(t, s)
+        #fig, ax = plt.subplots()
+        #ax.plot(t, s)
 
-        ax.set(xlabel='time (s)', ylabel='voltage (mV)',title='About as simple as it gets, folks')
-        ax.grid()
+        #ax.set(xlabel='time (s)', ylabel='voltage (mV)',title='About as simple as it gets, folks')
+        #ax.grid()
 
-        plt.show()
-        #input()
-        #inputSeries = pd.DataFrame
-        #for i in range (1000):
+        #plt.show()
+        ##input()
+        ##inputSeries = pd.DataFrame
+        ##for i in range (1000):
          
-        #inputCount = pd.DataFrame({"input":cppProcess.getCurrentInputCount()})                
-        #update_line(hl, inputCount)
-        # Create figure for plotting
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        xs = []
-        ys = []
-        ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=1000)
-        time.sleep(10)
+        ##inputCount = pd.DataFrame({"input":cppProcess.getCurrentInputCount()})                
+        ##update_line(hl, inputCount)
+        ## Create figure for plotting
+        #fig = plt.figure()
+        #ax = fig.add_subplot(1, 1, 1)
+        #xs = []
+        #ys = []
+        ##while cppProcess.checkComplete() != True:
+        #ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=1000)
+        #input()
+        #time.sleep(10)
         ### Results ###
         results = cppProcess.getResults()
         print("return results: {}".format(results))                         
@@ -124,9 +147,6 @@ def startDataStream():
         except: 
             print("error: results not in a csv format.")
         
-
-
 if __name__ == "__main__":
     startDataStream()
     
-

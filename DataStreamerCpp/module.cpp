@@ -83,6 +83,7 @@ public:
 
 
 	std::deque<std::string>  getResults(bool clear = false);
+	int getResultsCount();
 	std::deque<std::string>  getCurrentInput();
 	int getCurrentInputCount();
 	//int initReaders(int length, const char ** string_list);
@@ -200,7 +201,7 @@ bool datasetStream::checkComplete()
 	}
 
 
-	return ProcessComplete;
+	return JobComplete;
 }
 // does exactly the same thing as InitReaders, but returns the char *  for debugging. DEPRECATED
 std::string  datasetStream::initReadersDebug(std::vector<std::string>  string_list) {
@@ -253,9 +254,18 @@ std::deque< std::string> datasetStream::getResults(bool clear)
 		}
 	}
 	return results;
-
-
 }
+int datasetStream::getResultsCount()
+{
+	int result = -1;
+	if (true) {
+		std::lock_guard<std::mutex> guard(outputQueueMutex);
+		result = outputQueue.size();
+		//result = 1;
+	}
+	return result;
+}
+
 
 int datasetStream::getCurrentInputCount()
 {
@@ -388,10 +398,13 @@ PYBIND11_MODULE(DataStreamerCpp, m) {
 		.def("sum", &datasetStream::sum, "sum to check its working")
 		.def("startCounter", &datasetStream::startCounter, "thread Start")		
 		.def("getResults", &datasetStream::getResults, "get the results", py::arg("clear") = false)
+		.def("getResultsCount", &datasetStream::getResultsCount, "get the results count")
+		
 		.def("getCurrentInput", &datasetStream::getCurrentInput)
 		.def("getCurrentInputCount", &datasetStream::getCurrentInputCount)
 		.def("initReaders", &datasetStream::initReaders)
-		.def("initReadersDebug", &datasetStream::initReadersDebug);
+		.def("initReadersDebug", &datasetStream::initReadersDebug)
+		.def("checkComplete", &datasetStream::checkComplete, "check if the process is complete");	
 
 	
 #ifdef VERSION_INFO
