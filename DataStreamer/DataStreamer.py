@@ -68,8 +68,7 @@ def startDataStream():
                break
             count= count + 1
             inputFile.append(row.encode('utf-8'))
-            sys.stdout.write("currently reading {} rows \r".format(count))
-            sys.stdout.flush()
+            print('currently reading {}  rows \r'.format(count), end ="")
         csvfile.close()
         print("total rows counted:{}".format(count))
          
@@ -90,9 +89,9 @@ def startDataStream():
         line1 = []
         fig=plt.figure(figsize=(13,6))
         while cppProcess.checkComplete() != True:            
-            print('currently processing input {}...\r'.format(cppProcess.getResultsCount()), end ="")            
-            rand_val = np.random.randn(1)
-            y_vec[-1] = rand_val
+            print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
+            #y_vec[-1] = np.random.randn(1)
+            y_vec[-1] = cppProcess.getResultsCount()
             line1 = live_plotter(x_vec,y_vec,line1, figure=fig)
             y_vec = np.append(y_vec[1:],0.0)
         
@@ -140,6 +139,7 @@ def startDataStream():
         results = cppProcess.getResults()
         print("return results: {}".format(results))                         
         results = ''.join(results)
+        input()
         try:
             df = pd.read_csv(pd.compat.StringIO(results), header=None)
             print(df.head())

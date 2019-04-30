@@ -20,9 +20,7 @@ def mypause(interval):
             return
 
 
-def live_plotter(x_vec,y1_data,line1,identifier='',pause_time=0.1, figure = None ):
-    
-    print(type(figure))
+def live_plotter(x_vec,y1_data,line1,identifier='',pause_time=0.016, figure = None ):        
     if line1==[]:
         # this is the call to matplotlib that allows dynamic plotting
         plt.ion()        
@@ -39,8 +37,7 @@ def live_plotter(x_vec,y1_data,line1,identifier='',pause_time=0.1, figure = None
         plt.ylabel('Y Label')
         plt.title('Title: {}'.format(identifier))       
         plt.show()
-        
-    
+            
     # after the figure, axis, and line are created, we only need to update the y-data
     line1.set_ydata(y1_data)
     # adjust limits if new data goes beyond bounds
