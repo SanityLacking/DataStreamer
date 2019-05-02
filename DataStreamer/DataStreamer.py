@@ -34,31 +34,6 @@ def update_line(hl, new_data):
 
 
 
-
-    # This function is called periodically from FuncAnimation
-def animate(i, xs, ys):
-
-    # Read temperature (Celsius) from TMP102
-    #temp_c = round(tmp102.read_temp(), 2)
-
-    # Add x and y to lists
-    xs.append(dt.datetime.now().strftime('%H:%M:%S.%f'))
-    #ys.append(temp_c)
-
-    # Limit x and y lists to 20 items
-    xs = xs[-20:]
-    ys = ys[-20:]
-
-    # Draw x and y lists
-    ax.clear()
-    ax.plot(xs, ys)
-
-    # Format plot
-    plt.xticks(rotation=45, ha='right')
-    plt.subplots_adjust(bottom=0.30)
-    plt.title('TMP102 Temperature over Time')
-    plt.ylabel('Temperature (deg C)')
-
 def startDataStream():   
     count = 0
     inputFile =[]

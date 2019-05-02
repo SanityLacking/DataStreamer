@@ -2,6 +2,7 @@
 #include <Python.h>
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "pybind11/embed.h""
 #include <cmath>
 
 
@@ -139,6 +140,11 @@ private:
 datasetStream::datasetStream()
 {
 	//readerPool = new ThreadPool readerPool(4);
+
+	/* Acquire GIL before calling Python code */
+	py::gil_scoped_acquire acquire;	
+	py::print("C++ Class datasetStream Initialized");
+	py::gil_scoped_release release;
 }
 /* read in the input data and stores it. Initializes the threaded datareaders. */
 int datasetStream::initReaders(std::vector<std::string>  string_list)
@@ -290,8 +296,11 @@ std::deque< std::string> datasetStream::getCurrentInput()
 
 int datasetStream::processData() {
 	std::string row;
-	
+	py::gil_scoped_acquire acquire;
+	py::module pyProcess = py::module::import("pyprocessor");
+	py::print("Processing Thread Initialized");
 	while (true) { //TODO, come up with a better loop check for this.
+		//py::gil_scoped_acquire();
 		
 		row.clear();
 		//check for input rows to process
@@ -307,12 +316,16 @@ int datasetStream::processData() {
 			//do some processing
 			//double result = knn.KNNprocess(row);
 			//put results in the outputStack
+			/* Acquire GIL before calling Python code */
+			py::gil_scoped_acquire acquire;
+			py::print("Processing Thread Active");
+			py::gil_scoped_release release;
+
 			std::string result = row;
 			{
 				std::lock_guard<std::mutex> guard(outputQueueMutex);
 				outputQueue.push_back(result);
-			}
-			
+			}			
 		}
 		ProcessComplete = true;
 		std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
