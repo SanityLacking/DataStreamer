@@ -27,6 +27,14 @@ To build this code you need to have two additional files, ```Python.h``` and ```
 **DataStreamerCpp** This is the cpp files for the application that are called by the python wrapper to perform the actual processing.
     *Module.cpp* the main file for this project, contains the cpp class that all the work is done through.
 
+Datasets:
 
+[NSL_KDD](https://github.com/defcom17/NSL_KDD)
+
+[UNSW NB15] (https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/) and updated replacement of the KD99 Dataset.
+
+[Paper on these datasets and their differences](https://arxiv.org/pdf/1811.05372.pdf)
+
+[more available here](https://www.unb.ca/cic/datasets/index.html)
 Links\
 [Visual Studio + Pybind11](https://docs.microsoft.com/en-us/visualstudio/python/working-with-c-cpp-python-in-visual-studio?view=vs-2019)
