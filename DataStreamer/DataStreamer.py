@@ -63,7 +63,7 @@ def startDataStream():
         y_vec = np.zeros(shape=(100,1))
         line1 = []
         fig=plt.figure(figsize=(13,6))
-        while cppProcess.checkComplete() != True:            
+        while cppProcess.checkComplete() != True:
             print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
             #y_vec[-1] = np.random.randn(1)
             y_vec[-1] = cppProcess.getResultsCount()
@@ -114,7 +114,7 @@ def startDataStream():
         results = cppProcess.getResults()
         print("return results: {}".format(results))                         
         results = ''.join(results)
-        input()
+        #input()
         try:
             df = pd.read_csv(pd.compat.StringIO(results), header=None)
             print(df.head())

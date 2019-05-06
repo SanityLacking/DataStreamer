@@ -2,7 +2,7 @@
 #include <Python.h>
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-#include "pybind11/embed.h""
+#include "pybind11/embed.h"
 #include <cmath>
 
 
@@ -23,6 +23,7 @@
 
 namespace py = pybind11;
 
+const bool DEBUG = true;
 
 /*
 int dataRead(std::vector<std::string> &dataset, std::vector<std::string> &inputStack) {
@@ -122,6 +123,9 @@ private:
 	int x1 = 1;
 	int y1 = 1;
 
+
+	py::object processMethod; 
+
 	//std::mutex readerMutex;
 	std::mutex classMutex; //very important step, make sure your mutexes are defined inside your class so that your classbased functions can see them.
 	std::mutex inputQueueMutex;
@@ -131,7 +135,7 @@ private:
 	std::deque<std::string> inputStackTiming;
 	bool pContinue = true;
 	int val;
-	int processData();
+	int processData(py::object processMethod);
 	int loadbalance();
 
 };
@@ -144,13 +148,33 @@ datasetStream::datasetStream()
 	/* Acquire GIL before calling Python code */
 	py::gil_scoped_acquire acquire;	
 	py::print("C++ Class datasetStream Initialized");
+
+	py::object pyProcessor = py::module::import("pyprocessor").attr("Processor"); // import the module, specifically the class I want
+	processMethod = pyProcessor();		// initialize the class 
+	if (DEBUG == true) {
+		py::object debugPrint = processMethod.attr("debugPrint")(); //run a function from the class
+		py::print(py::str(debugPrint));
+	}
+	py::print("Processing Method Chosen, Knn Initialized");
 	py::gil_scoped_release release;
+
 }
 /* read in the input data and stores it. Initializes the threaded datareaders. */
 int datasetStream::initReaders(std::vector<std::string>  string_list)
 {
 	dataset = string_list; //set the dataset to process to the passed list.
-	copy(dataset.begin(), dataset.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
+	double trainingSetSize = 0.2;
+	double testSetSize = 0.8;
+	assert(trainingSetSize + testSetSize >= 1);
+		
+	std::vector<std::string>trainingData(string_list.begin(), string_list.begin() + string_list.size()* trainingSetSize);
+	std::vector<std::string>testData(string_list.begin() + string_list.size() * trainingSetSize, string_list.end());
+	
+	py::gil_scoped_acquire acquire;
+	processMethod.attr("fit")(trainingData);
+	py::gil_scoped_release release;
+
+	copy(testData.begin(), testData.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
 	//std::vector<std::string> tokens = string_list;	
 	//outputStack.insert(outputStack.end(), tokens.begin(), tokens.end());
 	//convert list of strings into vector of vectors
@@ -180,7 +204,7 @@ int datasetStream::initReaders(std::vector<std::string>  string_list)
 	loadBalancerThread.detach();
 
 	// start processor thread
-	std::thread processorThread(&datasetStream::processData, this);
+	std::thread processorThread(&datasetStream::processData, this, processMethod);
 	processorThread.detach();
 
 
@@ -294,11 +318,20 @@ std::deque< std::string> datasetStream::getCurrentInput()
 }
 
 
-int datasetStream::processData() {
+int datasetStream::processData(py::object processMethod) {
+	
 	std::string row;
 	py::gil_scoped_acquire acquire;
-	py::module pyProcess = py::module::import("pyprocessor");
+	py::print("process thread");
+	//py::object pyProcessor = py::module::import("pyprocessor").attr("Processor"); // import the module, specifically the class I want
+	//py::object Processor = pyProcessor();		// initialize the class 
+	if(DEBUG==true){
+		py::object debugPrint = processMethod.attr("threadCheck")(); //run a function from the class
+		py::print(py::str(debugPrint)); 
+	}	
+
 	py::print("Processing Thread Initialized");
+	py::gil_scoped_release release;
 	while (true) { //TODO, come up with a better loop check for this.
 		//py::gil_scoped_acquire();
 		
@@ -318,7 +351,10 @@ int datasetStream::processData() {
 			//put results in the outputStack
 			/* Acquire GIL before calling Python code */
 			py::gil_scoped_acquire acquire;
-			py::print("Processing Thread Active");
+			if (DEBUG == true)
+				py::print("Processing Thread Active");
+			
+			processMethod.attr("process")(row);
 			py::gil_scoped_release release;
 
 			std::string result = row;
