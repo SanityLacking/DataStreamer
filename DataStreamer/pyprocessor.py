@@ -10,7 +10,7 @@ import numpy as np
 
 
 class Processor:
-
+    Debug = True
 
 
     def __init__(self, *args, **kwargs):
@@ -21,19 +21,24 @@ class Processor:
     #processor called by c++ to complete the processing.    
     def fit(self, train, labels):
         try:
-            trainSet =[]
-            labelsSet = []
+            if self. Debug:
+                print("train: {}".format(len(train)))
+                print("labels: {}".format(len(labels)))
+
+                print("train: {}".format(train[0]))
+                print("labels: {}".format(labels[0]))
+
             print("knn fit")
-            for i in train:    
-                trainSet.append(i.split(','))
-            train = np.reshape(train, (-1,1))   
-            print(train.shape)
-            for i in labels:    
-                labelsSet.append(i.split(','))
-            labels = np.reshape(labels,(-1,1))
-            print(labels.shape)
+            
+            #trainSet = np.reshape(train, (-1,1))   
+            trainSet = np.array(train)
+            print("trainset Shape {}".format(trainSet.shape))
+            
+            labelsSet = np.reshape(labels,(-1,1))
+            
             #training_set = np.fromstring(train, dtype = None, sep=',')            
-            #labels_set = np.fromstring(labels, dtype = None, sep=',')            
+            #labels_set = np.fromstring(labels, dtype = None, sep=',')   
+            #         
             self.knn.fit(trainSet, labelsSet)        
         except:
             print(traceback.format_exc())
@@ -42,8 +47,10 @@ class Processor:
     # the process function
     def process(self, inputArray):
         try:
-            input = np.fromstring(inputArray, dtype = None, sep=',')            
-            input = input.reshape(-1,1)            
+            #input = np.fromstring(inputArray, dtype = None, sep=',')            
+            input = np.array(inputArray)
+            input = input.reshape(1,-1)
+            print("predict Input shape: {}".format(input.shape))            
             result = self.knn.predict(input)
             print("knn result:{}".format(result))       
         except:

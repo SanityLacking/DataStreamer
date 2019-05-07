@@ -27,6 +27,7 @@
     <Compile Include="pylive.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="pyprocessor.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|py36" />

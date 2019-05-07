@@ -25,6 +25,7 @@ cppProcess = dsStream()
 CSVfileName ="../datasets/kddcup_data_10_percent_corrected.csv"
 MAXROWS = 100
 
+Debug = True
 
 #update the graph
 def update_line(hl, new_data):
@@ -58,7 +59,7 @@ def startDataStream():
         data = pd.read_csv(CSVfileName, header = None, nrows = 1000)
 
         #le = preprocessing.LabelEncoder()
-        labels = (data.loc[:,41])
+        labels = (data.iloc[:,41])
         #le.fit(labels)
         #print("classes of labels are:{}".format(le.classes_))
         #labels_normalized = le.transform(labels)
@@ -70,17 +71,43 @@ def startDataStream():
         labels_strings = labels.to_csv(header=None, index=False).strip('\n').split('\n')
         
         csvfile.close()            
-        print("total rows counted:{}".format(count))
-         
-        string_length = len(inputFile)
-        print("inputCount: {}".format(cppProcess.getCurrentInputCount()))
+        #print("total rows counted:{}".format(count))
         
+
+        #perform preprocessing on data
+        le = preprocessing.LabelEncoder()
+        
+        le.fit(labels_strings)
+        print("classes of labels are:{}".format(le.classes_))
+        labels_encoded = le.transform(labels_strings)
+        #print(labels_encoded)
+        ###convert array to str and then to lists.###
+        #inputFile = inputFile.astype(str)
+        #inputFile = inputFile.values.tolist()
+        #labels = labels.astype(str)
+        #labels = labels.values.tolist() 
+         
+        #le.fit(inputFile.iloc[:,1])
+        #print("classes of training Data are:{}".format(le.classes_))
+        #inputFile_encoded = le.transform(inputFile.loc[1:3])
+
+        #le.fit(inputFile.iloc[:,2])
+        #print("classes of training Data are:{}".format(le.classes_))
+        #inputFile_encoded = le.transform(inputFile.loc[1:3])
+
+        #le.fit(inputFile.iloc[:,3])
+        #print("classes of training Data are:{}".format(le.classes_))
+        #inputFile_encoded = le.transform(inputFile.loc[1:3])
+
+        inputFile = inputFile.apply(preprocessing.LabelEncoder().fit_transform)
+        #print(inputFile)
         inputFile = inputFile.astype(str)
         inputFile = inputFile.values.tolist()
-        labels = labels.astype(str)
-        labels = labels.values.tolist()
-        print(type(inputFile[0]))
-        print(type(labels[0]))
+        labels = labels_encoded.astype(str)
+        print(type(labels))                     
+        labels = labels.tolist()
+        print(len(inputFile))
+        print(len(labels))
         sent = cppProcess.initReaders(inputFile, labels)
         print("initReader {}".format(sent))
         
