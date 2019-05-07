@@ -14,13 +14,15 @@ import datetime as dt
 import matplotlib.animation as animation
 from pylive import live_plotter
 interactive(True)
+from sklearn import preprocessing
 
 import seaborn as sns
 import matplotlib
 
 
 cppProcess = dsStream()
-CSVfileName ="../datasets/kdd99-unsupervised-ad.csv"
+#CSVfileName ="../datasets/kdd99-unsupervised-ad.csv"
+CSVfileName ="../datasets/kddcup_data_10_percent_corrected.csv"
 MAXROWS = 100
 
 
@@ -37,21 +39,43 @@ def update_line(hl, new_data):
 def startDataStream():   
     count = 0
     inputFile =[]
+    labels =[]
     with open(CSVfileName, "r", newline='') as csvfile:
         for row in csvfile:
             if MAXROWS > 0 and count >= MAXROWS:
                break
             count= count + 1
+            
+
+            #break apart the data and the label
+            #print(type(row))
+            labels.append(row[41].encode('utf-8'))
             inputFile.append(row.encode('utf-8'))
+
+
             print('currently reading {}  rows \r'.format(count), end ="")
-        csvfile.close()
+            
+        data = pd.read_csv(CSVfileName, header = None, nrows = 1000)
+
+        #le = preprocessing.LabelEncoder()
+        labels = (data.loc[:,41])
+        #le.fit(labels)
+        #print("classes of labels are:{}".format(le.classes_))
+        #labels_normalized = le.transform(labels)
+        inputFile =data.drop([41], axis=1)                                
+        #convert dataframe to list of strings
+        #inputFile_strings = inputFile.astype(str).values.tolist()
+        inputFile_strings = inputFile.to_csv(header=None, index=False).strip('\n').split('\n')
+        #labels_strings =  labels.astype(str).values.tolist()
+        labels_strings = labels.to_csv(header=None, index=False).strip('\n').split('\n')
+        
+        csvfile.close()            
         print("total rows counted:{}".format(count))
          
         string_length = len(inputFile)
         print("inputCount: {}".format(cppProcess.getCurrentInputCount()))
-
-
-        sent = cppProcess.initReaders(inputFile)
+        
+        sent = cppProcess.initReaders(inputFile, labels)
         print("initReader {}".format(sent))
         
         print(cppProcess.checkComplete())
@@ -120,8 +144,7 @@ def startDataStream():
             print(df.head())
             print(df.shape)
         except: 
-            print("error: results not in a csv format.")
-        
+            print("error: results not in a csv format.")            
 if __name__ == "__main__":
     startDataStream()
     

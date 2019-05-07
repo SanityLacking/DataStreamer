@@ -84,14 +84,14 @@ public:
 	int getCounter();
 
 
-	std::deque<std::string>  getResults(bool clear = false);
+	std::deque<std::vector< std::string> >  getResults(bool clear = false);
 	int getResultsCount();
-	std::deque<std::string>  getCurrentInput();
+	std::deque<std::vector< std::string> >  getCurrentInput();
 	int getCurrentInputCount();
 	//int initReaders(int length, const char ** string_list);
-	int initReaders(std::vector<std::string>  str);
+	int initReaders(std::vector<std::vector< std::string> >  inputData, std::vector< std::vector<std::string> > labels = std::vector< std::vector<std::string> >());
 	bool checkComplete();
-	std::string initReadersDebug(std::vector<std::string>  str);
+	std::string initReadersDebug(std::vector<std::vector< std::string> >  inputData);
 
 	const int READERINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
 	const int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
@@ -108,16 +108,16 @@ public:
 
 private:
 	bool starter;
-	std::vector<std::string> dataset = {}; //the initial load location of the dataset, does not get changed after it is loaded.
-	std::deque<std::string> datasetQueue = {}; //the queue of the initial dataset, passed to the worker threads to be inserted into the input queue sequentially.
+	std::vector<std::vector< std::string> > dataset = {}; //the initial load location of the dataset, does not get changed after it is loaded.
+	std::deque<std::vector< std::string> > datasetQueue = {}; //the queue of the initial dataset, passed to the worker threads to be inserted into the input queue sequentially.
 
-	std::vector<std::string> inputStack = {}; //stack for the incoming reads to be placed by the datareader threads	
-	std::deque<std::string> inputQueue = {}; //the queue of the input data to be processed. this is separate then the dataset queue to simulate incomming input load.
+	std::vector<std::vector< std::string> > inputStack = {}; //stack for the incoming reads to be placed by the datareader threads	
+	std::deque<std::vector< std::string> > inputQueue = {}; //the queue of the input data to be processed. this is separate then the dataset queue to simulate incomming input load.
 
 	bool JobComplete = false;
 	bool ProcessComplete = false;
-	std::vector<std::string> outputStack = {};	 //output stack of all processed elements
-	std::deque<std::string> outputQueue = {};	//output queue to be passed back to the calling program
+	std::vector<std::vector< std::string> > outputStack = {};	 //output stack of all processed elements
+	std::deque<std::vector< std::string> > outputQueue = {};	//output queue to be passed back to the calling program
 
 	int n = 5;
 	int x1 = 1;
@@ -130,8 +130,8 @@ private:
 	std::mutex classMutex; //very important step, make sure your mutexes are defined inside your class so that your classbased functions can see them.
 	std::mutex inputQueueMutex;
 	std::mutex outputQueueMutex;
-	int dataR(std::vector<std::string> &dataset); //threaded data reader function
-	int dataReader(std::deque<std::string> &dataset, std::deque<std::string> &inputQueue);
+	int dataR(std::vector<std::vector< std::string> >  &dataset); //threaded data reader function
+	int dataReader(std::deque<std::vector< std::string> > &dataset, std::deque<std::vector< std::string> > &inputQueue);
 	std::deque<std::string> inputStackTiming;
 	bool pContinue = true;
 	int val;
@@ -159,19 +159,30 @@ datasetStream::datasetStream()
 	py::gil_scoped_release release;
 
 }
-/* read in the input data and stores it. Initializes the threaded datareaders. */
-int datasetStream::initReaders(std::vector<std::string>  string_list)
+/* read in the input data and stores it. Initializes the threaded datareaders. 
+	String_List: the input dataset in the form of a list of strings for each row, comma delimited
+	labels: the list of labels for string list. 
+
+*/
+
+int datasetStream::initReaders(std::vector<std::vector< std::string> >  inputData, std::vector< std::vector<std::string> > labels)
 {
-	dataset = string_list; //set the dataset to process to the passed list.
+	if (labels.size() > 0  )
+		assert(inputData.size() == labels.size());
+	dataset = inputData; //set the dataset to process to the passed list.
 	double trainingSetSize = 0.2;
 	double testSetSize = 0.8;
 	assert(trainingSetSize + testSetSize >= 1);
 		
-	std::vector<std::string>trainingData(string_list.begin(), string_list.begin() + string_list.size()* trainingSetSize);
-	std::vector<std::string>testData(string_list.begin() + string_list.size() * trainingSetSize, string_list.end());
+	std::vector<std::vector< std::string> >trainingData(inputData.begin(), inputData.begin() + inputData.size()* trainingSetSize);
+	std::vector<std::vector< std::string> >testData(inputData.begin() + inputData.size() * trainingSetSize, inputData.end());
+	
+	std::vector<std::vector< std::string> >trainingLabels(labels.begin(), labels.begin() + labels.size()* trainingSetSize);
+	std::vector<std::vector< std::string> >testLabels(labels.begin() + labels.size() * trainingSetSize, labels.end());
+
 	
 	py::gil_scoped_acquire acquire;
-	processMethod.attr("fit")(trainingData);
+	processMethod.attr("fit")(trainingData, trainingLabels);
 	py::gil_scoped_release release;
 
 	copy(testData.begin(), testData.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
@@ -234,7 +245,7 @@ bool datasetStream::checkComplete()
 	return JobComplete;
 }
 // does exactly the same thing as InitReaders, but returns the char *  for debugging. DEPRECATED
-std::string  datasetStream::initReadersDebug(std::vector<std::string>  string_list) {
+std::string  datasetStream::initReadersDebug(std::vector<std::vector< std::string> >  string_list) {
 	try
 	{
 		//std::thread thread2(threadCounter, std::ref(x1), std::ref(y1));
@@ -253,7 +264,7 @@ std::string  datasetStream::initReadersDebug(std::vector<std::string>  string_li
 //simple function to test the class is working TEST FUNCTION
 int datasetStream::sum(int n)
 {
-	outputStack.push_back("changed");
+	//outputStack.push_back("changed");
 	return n + n;
 }
 void datasetStream::startCounter(int x)
@@ -272,9 +283,10 @@ void datasetStream::startCounter(int x)
 //}
 /* Get current results that have been processed. if clear is true, will remove all sent results and empty the results vector.
 */
-std::deque< std::string> datasetStream::getResults(bool clear)
+std::deque<std::vector< std::string> > datasetStream::getResults(bool clear)
 {
-	std::deque< std::string> results;
+
+	std::deque<std::vector< std::string> > results;
 	if (true) {
 		// TODO mutex guard. is this a shallow or hard copy? i think its a hard copy
 		std::lock_guard<std::mutex> guard(outputQueueMutex);
@@ -307,9 +319,9 @@ int datasetStream::getCurrentInputCount()
 	}
 	return result;
 }
-std::deque< std::string> datasetStream::getCurrentInput()
+std::deque<std::vector< std::string> > datasetStream::getCurrentInput()
 {
-	std::deque< std::string> results = {};
+	std::deque<std::vector< std::string> > results = {};
 	if (true) {
 		std::lock_guard<std::mutex> guard(inputQueueMutex);
 		results = inputQueue;
@@ -320,7 +332,7 @@ std::deque< std::string> datasetStream::getCurrentInput()
 
 int datasetStream::processData(py::object processMethod) {
 	
-	std::string row;
+	std::vector< std::string> row;
 	py::gil_scoped_acquire acquire;
 	py::print("process thread");
 	//py::object pyProcessor = py::module::import("pyprocessor").attr("Processor"); // import the module, specifically the class I want
@@ -357,7 +369,7 @@ int datasetStream::processData(py::object processMethod) {
 			processMethod.attr("process")(row);
 			py::gil_scoped_release release;
 
-			std::string result = row;
+			std::vector< std::string> result = row;
 			{
 				std::lock_guard<std::mutex> guard(outputQueueMutex);
 				outputQueue.push_back(result);
@@ -407,7 +419,7 @@ int datasetStream::loadbalance() {
 }
 
 // Implementation of worker threads using queues
-int datasetStream::dataReader(std::deque<std::string> &dataset, std::deque<std::string> &inputQueue) {
+int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, std::deque<std::vector< std::string> > &inputQueue) {
 	//take line from dataset and put it on input stack. then sleep
 	while (!dataset.empty())
 	{
@@ -421,7 +433,7 @@ int datasetStream::dataReader(std::deque<std::string> &dataset, std::deque<std::
 	return 0;
 }
 // Implementation of worker threads using vectors. Currently not used in favour of using deques.
-int datasetStream::dataR(std::vector<std::string> &dataset) {
+int datasetStream::dataR(std::vector<std::vector< std::string> >  &dataset) {
 	//take line from dataset and put it on input stack. then sleep
 	while (!dataset.empty())
 	{
@@ -451,7 +463,7 @@ PYBIND11_MODULE(DataStreamerCpp, m) {
 		
 		.def("getCurrentInput", &datasetStream::getCurrentInput)
 		.def("getCurrentInputCount", &datasetStream::getCurrentInputCount)
-		.def("initReaders", &datasetStream::initReaders)
+		.def("initReaders", &datasetStream::initReaders, "", py::arg().noconvert(), py::arg("labels")= std::vector<std::vector<std::string> >())
 		.def("initReadersDebug", &datasetStream::initReadersDebug)
 		.def("checkComplete", &datasetStream::checkComplete, "check if the process is complete");	
 

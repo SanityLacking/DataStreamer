@@ -21,8 +21,20 @@ class Processor:
     #processor called by c++ to complete the processing.    
     def fit(self, train, labels):
         try:
+            trainSet =[]
+            labelsSet = []
             print("knn fit")
-            self.knn.fit(train, labels)        
+            for i in train:    
+                trainSet.append(i.split(','))
+            train = np.reshape(train, (-1,1))   
+            print(train.shape)
+            for i in labels:    
+                labelsSet.append(i.split(','))
+            labels = np.reshape(labels,(-1,1))
+            print(labels.shape)
+            #training_set = np.fromstring(train, dtype = None, sep=',')            
+            #labels_set = np.fromstring(labels, dtype = None, sep=',')            
+            self.knn.fit(trainSet, labelsSet)        
         except:
             print(traceback.format_exc())
         return 0
