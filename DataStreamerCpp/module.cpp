@@ -4,7 +4,7 @@
 #include "pybind11/stl.h"
 #include "pybind11/embed.h"
 #include <cmath>
-
+#include "pybind11/numpy.h"
 
 #include <string>
 #include <vector>
@@ -89,7 +89,7 @@ public:
 	std::deque<std::vector< std::string> >  getCurrentInput();
 	int getCurrentInputCount();
 	//int initReaders(int length, const char ** string_list);
-	int initReaders(std::vector<std::vector< std::string> >  inputData, std::vector< std::vector<std::string> > labels = std::vector< std::vector<std::string> >());
+	int initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels = std::vector<std::string>());
 	bool checkComplete();
 	std::string initReadersDebug(std::vector<std::vector< std::string> >  inputData);
 
@@ -165,7 +165,7 @@ datasetStream::datasetStream()
 
 */
 
-int datasetStream::initReaders(std::vector<std::vector< std::string> >  inputData, std::vector< std::vector<std::string> > labels)
+int datasetStream::initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels)
 {
 	if (labels.size() > 0  )
 		assert(inputData.size() == labels.size());
@@ -177,8 +177,8 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  inputDat
 	std::vector<std::vector< std::string> >trainingData(inputData.begin(), inputData.begin() + inputData.size()* trainingSetSize);
 	std::vector<std::vector< std::string> >testData(inputData.begin() + inputData.size() * trainingSetSize, inputData.end());
 	
-	std::vector<std::vector< std::string> >trainingLabels(labels.begin(), labels.begin() + labels.size()* trainingSetSize);
-	std::vector<std::vector< std::string> >testLabels(labels.begin() + labels.size() * trainingSetSize, labels.end());
+	std::vector< std::string> trainingLabels(labels.begin(), labels.begin() + labels.size()* trainingSetSize);
+	std::vector< std::string> testLabels(labels.begin() + labels.size() * trainingSetSize, labels.end());
 
 	
 	py::gil_scoped_acquire acquire;
@@ -463,7 +463,7 @@ PYBIND11_MODULE(DataStreamerCpp, m) {
 		
 		.def("getCurrentInput", &datasetStream::getCurrentInput)
 		.def("getCurrentInputCount", &datasetStream::getCurrentInputCount)
-		.def("initReaders", &datasetStream::initReaders, "", py::arg().noconvert(), py::arg("labels")= std::vector<std::vector<std::string> >())
+		.def("initReaders", &datasetStream::initReaders, "", py::arg(), py::arg("labels")= std::vector<std::string>())
 		.def("initReadersDebug", &datasetStream::initReadersDebug)
 		.def("checkComplete", &datasetStream::checkComplete, "check if the process is complete");	
 

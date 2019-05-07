@@ -75,6 +75,12 @@ def startDataStream():
         string_length = len(inputFile)
         print("inputCount: {}".format(cppProcess.getCurrentInputCount()))
         
+        inputFile = inputFile.astype(str)
+        inputFile = inputFile.values.tolist()
+        labels = labels.astype(str)
+        labels = labels.values.tolist()
+        print(type(inputFile[0]))
+        print(type(labels[0]))
         sent = cppProcess.initReaders(inputFile, labels)
         print("initReader {}".format(sent))
         
