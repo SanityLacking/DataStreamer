@@ -6,11 +6,11 @@ import numpy as np
 #class class1(object):
     #"""description of class"""
 
-
+Debug = True
 
 
 class Processor:
-    Debug = True
+    
 
 
     def __init__(self, *args, **kwargs):
@@ -21,7 +21,7 @@ class Processor:
     #processor called by c++ to complete the processing.    
     def fit(self, train, labels):
         try:
-            if self. Debug:
+            if Debug:
                 print("train: {}".format(len(train)))
                 print("labels: {}".format(len(labels)))
 
@@ -34,11 +34,14 @@ class Processor:
             trainSet = np.array(train)
             print("trainset Shape {}".format(trainSet.shape))
             
-            labelsSet = np.reshape(labels,(-1,1))
+            labelsSet = np.ravel(labels)
+            #labelsSet = np.reshape(labels,(-1,1))
             
             #training_set = np.fromstring(train, dtype = None, sep=',')            
             #labels_set = np.fromstring(labels, dtype = None, sep=',')   
             #         
+            trainSet = trainSet.astype(np.float64)
+            labelsSet = labelsSet.astype(np.float64)
             self.knn.fit(trainSet, labelsSet)        
         except:
             print(traceback.format_exc())
@@ -49,10 +52,16 @@ class Processor:
         try:
             #input = np.fromstring(inputArray, dtype = None, sep=',')            
             input = np.array(inputArray)
+            input = input.astype(np.float64)
             input = input.reshape(1,-1)
-            print("predict Input shape: {}".format(input.shape))            
+
+            if Debug:
+                print("predict Input shape: {}".format(input.shape))            
+
             result = self.knn.predict(input)
-            print("knn result:{}".format(result))       
+
+            if Debug:
+                print("knn result:{}".format(result))       
         except:
             print(traceback.format_exc())
         return result

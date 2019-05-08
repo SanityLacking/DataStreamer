@@ -42,63 +42,26 @@ def startDataStream():
     inputFile =[]
     labels =[]
     with open(CSVfileName, "r", newline='') as csvfile:
-        for row in csvfile:
-            if MAXROWS > 0 and count >= MAXROWS:
-               break
-            count= count + 1
-            
+        #for row in csvfile:
+        #    if MAXROWS > 0 and count >= MAXROWS:
+        #       break
+        #    count= count + 1
+        #    #break apart the data and the label
+        #    #print(type(row))
+        #    labels.append(row[41].encode('utf-8'))
+        #    inputFile.append(row.encode('utf-8'))
+        #    print('currently reading {}  rows \r'.format(count), end ="")
+        #csvfile.close()  
+                           
+        data = pd.read_csv(CSVfileName, header = None, nrows = 100)
 
-            #break apart the data and the label
-            #print(type(row))
-            labels.append(row[41].encode('utf-8'))
-            inputFile.append(row.encode('utf-8'))
-
-
-            print('currently reading {}  rows \r'.format(count), end ="")
-            
-        data = pd.read_csv(CSVfileName, header = None, nrows = 1000)
-
-        #le = preprocessing.LabelEncoder()
-        labels = (data.iloc[:,41])
-        #le.fit(labels)
-        #print("classes of labels are:{}".format(le.classes_))
-        #labels_normalized = le.transform(labels)
-        inputFile =data.drop([41], axis=1)                                
-        #convert dataframe to list of strings
-        #inputFile_strings = inputFile.astype(str).values.tolist()
-        inputFile_strings = inputFile.to_csv(header=None, index=False).strip('\n').split('\n')
-        #labels_strings =  labels.astype(str).values.tolist()
-        labels_strings = labels.to_csv(header=None, index=False).strip('\n').split('\n')
-        
-        csvfile.close()            
-        #print("total rows counted:{}".format(count))
-        
-
-        #perform preprocessing on data
+        labels = (data.iloc[:,41])        
+        inputFile =data.drop([41], axis=1)                                        
         le = preprocessing.LabelEncoder()
-        
-        le.fit(labels_strings)
+        le.fit(labels)
         print("classes of labels are:{}".format(le.classes_))
-        labels_encoded = le.transform(labels_strings)
-        #print(labels_encoded)
-        ###convert array to str and then to lists.###
-        #inputFile = inputFile.astype(str)
-        #inputFile = inputFile.values.tolist()
-        #labels = labels.astype(str)
-        #labels = labels.values.tolist() 
-         
-        #le.fit(inputFile.iloc[:,1])
-        #print("classes of training Data are:{}".format(le.classes_))
-        #inputFile_encoded = le.transform(inputFile.loc[1:3])
-
-        #le.fit(inputFile.iloc[:,2])
-        #print("classes of training Data are:{}".format(le.classes_))
-        #inputFile_encoded = le.transform(inputFile.loc[1:3])
-
-        #le.fit(inputFile.iloc[:,3])
-        #print("classes of training Data are:{}".format(le.classes_))
-        #inputFile_encoded = le.transform(inputFile.loc[1:3])
-
+        labels_encoded = le.transform(labels)
+    
         inputFile = inputFile.apply(preprocessing.LabelEncoder().fit_transform)
         #print(inputFile)
         inputFile = inputFile.astype(str)
@@ -106,8 +69,9 @@ def startDataStream():
         labels = labels_encoded.astype(str)
         print(type(labels))                     
         labels = labels.tolist()
-        print(len(inputFile))
-        print(len(labels))
+        if Debug:
+            print(len(inputFile))
+            print(len(labels))
         sent = cppProcess.initReaders(inputFile, labels)
         print("initReader {}".format(sent))
         
@@ -121,63 +85,24 @@ def startDataStream():
         line1 = []
         fig=plt.figure(figsize=(13,6))
         while cppProcess.checkComplete() != True:
-            print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
+            if Debug:
+                print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
             #y_vec[-1] = np.random.randn(1)
             y_vec[-1] = cppProcess.getResultsCount()
             line1 = live_plotter(x_vec,y_vec,line1, figure=fig)
             y_vec = np.append(y_vec[1:],0.0)
         
-        #time.sleep(1) #apparently using a sleep breaks things for some reason? no idea why.
-        #for i in range (1000):
+            ## display results ##
+            results = cppProcess.getResults()
 
 
-        #currently the code is breaking here, TODO figure out why getCurrentInputCount is breaking.
-        #error is in the processThread in the cpp file.
-        #I think the problem is there is no error checking for running front() and pop_front() when the dqueue is empty. TODO add in try catch blocks to fix this.
-            #for i in range (100):                
-            #    print("inputCount: {}".format(cppProcess.getCurrentInputCount()))
-            #    plt.scatter
-            #    time.sleep(0.01)
-        #inputCount = pd.DataFrame([])
-
-        #hl, = plt.plot([],[])
-        ## Data for plotting
-        #t = np.arange(0.0, 2.0, 0.01)
-        #s = 1 + np.sin(2 * np.pi * t)
-
-        #fig, ax = plt.subplots()
-        #ax.plot(t, s)
-
-        #ax.set(xlabel='time (s)', ylabel='voltage (mV)',title='About as simple as it gets, folks')
-        #ax.grid()
-
-        #plt.show()
-        ##input()
-        ##inputSeries = pd.DataFrame
-        ##for i in range (1000):
-         
-        ##inputCount = pd.DataFrame({"input":cppProcess.getCurrentInputCount()})                
-        ##update_line(hl, inputCount)
-        ## Create figure for plotting
-        #fig = plt.figure()
-        #ax = fig.add_subplot(1, 1, 1)
-        #xs = []
-        #ys = []
-        ##while cppProcess.checkComplete() != True:
-        #ani = animation.FuncAnimation(fig, animate, fargs=(xs, ys), interval=1000)
-        #input()
-        #time.sleep(10)
+       
         ### Results ###
         results = cppProcess.getResults()
-        print("return results: {}".format(results))                         
-        results = ''.join(results)
+        
+        #print("return results: {}".format(results))                                 
         #input()
-        try:
-            df = pd.read_csv(pd.compat.StringIO(results), header=None)
-            print(df.head())
-            print(df.shape)
-        except: 
-            print("error: results not in a csv format.")            
+        
 if __name__ == "__main__":
     startDataStream()
     
