@@ -346,7 +346,7 @@ int datasetStream::processData(py::object processMethod) {
 	py::gil_scoped_release release;
 	while (true) { //TODO, come up with a better loop check for this.
 		//py::gil_scoped_acquire();
-		
+		auto start = std::chrono::steady_clock::now();
 		row.clear();
 		//check for input rows to process
 		{
@@ -366,10 +366,14 @@ int datasetStream::processData(py::object processMethod) {
 			if (DEBUG == true)
 				py::print("Processing Thread Active");
 			
-			processMethod.attr("process")(row);
+			auto output = processMethod.attr("process")(row);
+			py::print(output);
+			//std::vector< std::string> result = output;
+			//py::print(result);
 			py::gil_scoped_release release;
-
+			auto end = std::chrono::steady_clock::now();
 			std::vector< std::string> result = row;
+			//result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()));
 			{
 				std::lock_guard<std::mutex> guard(outputQueueMutex);
 				outputQueue.push_back(result);

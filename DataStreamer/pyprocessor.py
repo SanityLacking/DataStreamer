@@ -63,8 +63,8 @@ class Processor:
             if Debug:
                 print("knn result:{}".format(result))       
         except:
-            print(traceback.format_exc())
-        return result
+            print(traceback.format_exc())        
+        return result.tolist()
 
 
     def debugPrint(self):        

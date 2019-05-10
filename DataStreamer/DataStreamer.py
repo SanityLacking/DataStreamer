@@ -53,7 +53,7 @@ def startDataStream():
         #    print('currently reading {}  rows \r'.format(count), end ="")
         #csvfile.close()  
                            
-        data = pd.read_csv(CSVfileName, header = None, nrows = 100)
+        data = pd.read_csv(CSVfileName, header = None, nrows = 20)
 
         labels = (data.iloc[:,41])        
         inputFile =data.drop([41], axis=1)                                        
@@ -100,7 +100,7 @@ def startDataStream():
         ### Results ###
         results = cppProcess.getResults()
         
-        #print("return results: {}".format(results))                                 
+        print("return results: {}".format(results))                                 
         #input()
         
 if __name__ == "__main__":
