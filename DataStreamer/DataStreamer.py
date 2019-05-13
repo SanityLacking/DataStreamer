@@ -23,6 +23,7 @@ import matplotlib
 cppProcess = dsStream()
 #CSVfileName ="../datasets/kdd99-unsupervised-ad.csv"
 CSVfileName ="../datasets/kddcup_data_10_percent_corrected.csv"
+resultsFilePath ="../results/"
 MAXROWS = 100
 
 Debug = True
@@ -34,6 +35,11 @@ def update_line(hl, new_data):
     plt.draw()
 
 
+def saveResults(data, filename=None):
+    if filename == None:
+        filename = time.strftime("%Y%m%d-%H%M%S") + '.csv'
+    pd.DataFrame(data).to_csv(resultsFilePath+filename)
+    return 0 
 
 
 
@@ -100,7 +106,8 @@ def startDataStream():
         ### Results ###
         results = cppProcess.getResults()
         
-        print("return results: {}".format(results))                                 
+        print("return results: {}".format(results))    
+        saveResults(results)
         #input()
         
 if __name__ == "__main__":
