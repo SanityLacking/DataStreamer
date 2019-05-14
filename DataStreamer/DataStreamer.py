@@ -41,7 +41,46 @@ def saveResults(data, filename=None):
     pd.DataFrame(data).to_csv(resultsFilePath+filename)
     return 0 
 
-
+# a better working implementation of the fit transform function available in the label encoder library. Adds in the features
+# I personally expected in it when I used it.
+#performs individual column label encoding. provides list of label encoders for reversing of the transformation at a later date.
+#copy is performed to not effect the original data passed in.
+#object only is the default state, set this to false to enable the label encode for all columns individually.
+def fit_transform_cols(data, object_only = True):
+    if object_only == True:
+        object_data =  data.select_dtypes(include=['object']).copy()
+    else:
+        object_data =  data.copy()
+    # print(types.head())
+    output = pd.DataFrame(data).copy()
+    le_list = {}
+    for col in object_data:   
+        #print(np.sort(object_data[col].unique()) )
+        le = preprocessing.LabelEncoder()
+        le.fit(object_data[col])    
+        le_list[col] = le
+        #print("classes of {} are:{}".format(col,np.sort(le.classes_)))        
+        output[col] = le.transform(object_data[col])
+    return output, le_list
+    
+   #reverses the fit_transform_cols. takes in the dataset and the dictionary of of the label encoders. 
+   # keys of the dictionary refer to the column names of the input dataframe that are to be transformed reversed.
+   #can take single label encoder to run on entire dataframe.
+def transform_reverse_cols(data, le_list):
+    output = data.copy()
+    # if single label encoder is passed, use that for the entire dataframe.
+    if isinstance(le_list,preprocessing.LabelEncoder):
+          for col in output:
+            output[col]= le_list.inverse_transform(output[col])  
+            #print("classes of {} are:{}".format(key,np.sort(value.classes_)))                       
+    else:
+        output = pd.DataFrame(data).copy()
+        for key, value in le_list.items():
+            print(type(value))
+            print("classes of {} are:{}".format(key,np.sort(value.classes_)))
+            #print(key, type(value)) 
+            output[key]= value.inverse_transform(data[key])     
+    return output
 
 def startDataStream():   
     count = 0
