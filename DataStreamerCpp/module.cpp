@@ -362,12 +362,21 @@ int datasetStream::processData(py::object processMethod) {
 			//double result = knn.KNNprocess(row);
 			//put results in the outputStack
 			/* Acquire GIL before calling Python code */
+			
+
+			// get the start time that the row was passed to input queue from end of row and drop time from row for processing.
+			//Convert signed integral type to time_point
+			auto timeStart = std::stoll(row.back());
+			row.pop_back();
+			std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> dt{ std::chrono::milliseconds{timeStart} };
+
 			py::gil_scoped_acquire acquire;
 			if (DEBUG == true)
 				py::print("Processing Thread Active");
 			
 			py::object output = processMethod.attr("process")(row);
-			py::print(output);
+			if (DEBUG == true)
+				py::print(output);
 			std::string res = output.cast<std::string>();
 			std::vector< std::string> result;
 			result.push_back(res);
@@ -376,10 +385,13 @@ int datasetStream::processData(py::object processMethod) {
 			//py::print(result);
 			py::gil_scoped_release release;
 			auto end = std::chrono::steady_clock::now();
+			
 			//std::vector< std::string> result = row;			
 			//result.push_back(end);
+			result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())); //process time
+			result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - dt).count())); //time from input to process finished
 
-			result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()));
+			
 			{
 				std::lock_guard<std::mutex> guard(outputQueueMutex);
 				outputQueue.push_back(result);
@@ -433,9 +445,18 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 	//take line from dataset and put it on input stack. then sleep
 	while (!dataset.empty())
 	{
-		if (true) {
+		{
 			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			inputQueue.push_back(dataset.front());
+			std::vector< std::string> row = dataset.front();
+
+			auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());			
+			// Convert time_point to signed integral type
+			auto integral_duration = now.time_since_epoch().count();
+
+
+
+			row.push_back(std::to_string(integral_duration));
+			inputQueue.push_back(row);
 			dataset.pop_front();
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
