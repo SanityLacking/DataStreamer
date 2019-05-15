@@ -23,7 +23,7 @@
 
 namespace py = pybind11;
 
-const bool DEBUG = true;
+const bool DEBUG = false;
 
 /*
 int dataRead(std::vector<std::string> &dataset, std::vector<std::string> &inputStack) {
@@ -89,7 +89,7 @@ public:
 	std::deque<std::vector< std::string> >  getCurrentInput();
 	int getCurrentInputCount();
 	//int initReaders(int length, const char ** string_list);
-	int initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels = std::vector<std::string>());
+	int initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels = std::vector<std::string>(), std::vector<std::vector< std::string> >  X_test = std::vector<std::vector< std::string> >());
 	bool checkComplete();
 	std::string initReadersDebug(std::vector<std::vector< std::string> >  inputData);
 
@@ -165,38 +165,39 @@ datasetStream::datasetStream()
 
 */
 
-int datasetStream::initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels)
+int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, std::vector<std::string> labels, std::vector<std::vector< std::string> >  X_test)
 {
+	
+	//if X_test and y_test are empty, then only X and y are to be used to init.
+	//if they are not empty, input and labels are to be used as the training set and X_test and y_test as the test set.
+	
 	if (labels.size() > 0  )
-		assert(inputData.size() == labels.size());
-	dataset = inputData; //set the dataset to process to the passed list.
-	double trainingSetSize = 0.2;
-	double testSetSize = 0.8;
-	assert(trainingSetSize + testSetSize >= 1);
+		assert(input.size() == labels.size());
+
+	if (!X_test.empty()) { // input and labels are training, X_test is unknown data.
+		dataset = input; //set the dataset to process to the passed list.
+		py::gil_scoped_acquire acquire;
+		processMethod.attr("fit")(input, labels);
+		py::gil_scoped_release release;
+		copy(X_test.begin(), X_test.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
+	}else { //input and labels are training, X_test and y_test is test data and test labels.
+		//TODO fix this up more.
+		dataset = input; //set the dataset to process to the passed list.
+		py::gil_scoped_acquire acquire;
+		try
+		{
+			processMethod.attr("fit")(input, labels);
+		}
+		catch (const std::exception&)
+		{
+			py::print("not able to find function fit for singular training set.");
+		}
 		
-	std::vector<std::vector< std::string> >trainingData(inputData.begin(), inputData.begin() + inputData.size()* trainingSetSize);
-	std::vector<std::vector< std::string> >testData(inputData.begin() + inputData.size() * trainingSetSize, inputData.end());
+		py::gil_scoped_release release;
+		copy(input.begin(), input.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
+	}
+	//input and labels are used without a training step. 							// TODO//
 	
-	std::vector< std::string> trainingLabels(labels.begin(), labels.begin() + labels.size()* trainingSetSize);
-	std::vector< std::string> testLabels(labels.begin() + labels.size() * trainingSetSize, labels.end());
-
-	
-	py::gil_scoped_acquire acquire;
-	processMethod.attr("fit")(trainingData, trainingLabels);
-	py::gil_scoped_release release;
-
-	copy(testData.begin(), testData.end(), std::inserter(datasetQueue, datasetQueue.end())); //copy dataset to queue
-	//std::vector<std::string> tokens = string_list;	
-	//outputStack.insert(outputStack.end(), tokens.begin(), tokens.end());
-	//convert list of strings into vector of vectors
-	//int count = tokens.size();
-	//KNN knn;
-	//std::vector<std::string> files(string_list, string_list + length);
-	//std::vector<string>trainingSet = knn.getTrainingSet(tokens);
-	//knn.initKnn(trainingSet);
-
-
-
 	//create thread of dataReaders
 	//datareaders each take a line of input and put it in the IN pile. 
 	// the loadbalancer makes sure the IN pile isn't too big. Load balancer is a separate thread that constantly monitors the IN pile.
@@ -218,15 +219,6 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  inputDat
 	std::thread processorThread(&datasetStream::processData, this, processMethod);
 	processorThread.detach();
 
-
-	/*istringstream iss(string_list);
-	while (std::getline(getline(ss, item, ','))
-	{
-
-
-		m_vecFields.push_back(item);
-	}*/
-
 	return (int)dataset.size();
 }
 
@@ -236,9 +228,13 @@ bool datasetStream::checkComplete()
 
 	if (datasetQueue.empty() && inputQueue.empty() && ProcessComplete){
 		JobComplete = true;
+		py::gil_scoped_acquire acquire;
+		py::print("job finished");
+		py::gil_scoped_acquire release;
 	}
 	else {
 		JobComplete = false;
+		
 	}
 
 
@@ -397,6 +393,11 @@ int datasetStream::processData(py::object processMethod) {
 				outputQueue.push_back(result);
 			}			
 		}
+		else {
+			py::gil_scoped_acquire acquire;
+			py::print("row empty");
+			py::gil_scoped_acquire release;
+		}
 		ProcessComplete = true;
 		std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
 	}
@@ -494,7 +495,7 @@ PYBIND11_MODULE(DataStreamerCpp, m) {
 		
 		.def("getCurrentInput", &datasetStream::getCurrentInput)
 		.def("getCurrentInputCount", &datasetStream::getCurrentInputCount)
-		.def("initReaders", &datasetStream::initReaders, "", py::arg(), py::arg("labels")= std::vector<std::string>())
+		.def("initReaders", &datasetStream::initReaders, "", py::arg(), py::arg("labels")= std::vector<std::string>(), py::arg("X_test") = std::vector<std::vector< std::string> >())
 		.def("initReadersDebug", &datasetStream::initReadersDebug)
 		.def("checkComplete", &datasetStream::checkComplete, "check if the process is complete");	
 

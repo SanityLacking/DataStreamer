@@ -15,7 +15,7 @@ import matplotlib.animation as animation
 from pylive import live_plotter
 interactive(True)
 from sklearn import preprocessing
-
+from sklearn.model_selection import train_test_split
 import seaborn as sns
 import matplotlib
 
@@ -38,7 +38,7 @@ def update_line(hl, new_data):
 def saveResults(data, filename=None):
     if filename == None:
         filename = time.strftime("%Y%m%d-%H%M%S") + '.csv'
-    pd.DataFrame(data).to_csv(resultsFilePath+filename)
+    data.to_csv(resultsFilePath+filename)
     return 0 
 
 # a better working implementation of the fit transform function available in the label encoder library. Adds in the features
@@ -76,7 +76,7 @@ def transform_reverse_cols(data, le_list):
     else:
         output = pd.DataFrame(data).copy()
         for key, value in le_list.items():
-            print(type(value))
+            print("value type:{}".format(type(value)))
             print("classes of {} are:{}".format(key,np.sort(value.classes_)))
             #print(key, type(value)) 
             output[key]= value.inverse_transform(data[key])     
@@ -98,7 +98,7 @@ def startDataStream():
         #    print('currently reading {}  rows \r'.format(count), end ="")
         #csvfile.close()  
                            
-        data = pd.read_csv(CSVfileName, header = None, nrows = 20)
+        data = pd.read_csv(CSVfileName, header = None, nrows = MAXROWS)
 
         labels = (data.iloc[:,41])        
         inputFile =data.drop([41], axis=1)                                        
@@ -113,13 +113,18 @@ def startDataStream():
         inputFile = inputFile.astype(str)
         inputFile = inputFile.values.tolist()
         labels = labels_encoded.astype(str)
-        print(type(labels))                     
+
+        X_train, X_test, y_train, y_test = train_test_split(inputFile, labels, test_size=0.33, random_state=42)
+
+        #print(type(labels))                     
         labels = labels.tolist()
         if Debug:
-            print(len(inputFile))
-            print(len(labels))
-        sent = cppProcess.initReaders(inputFile, labels)
-        print("initReader {}".format(sent))
+            print("total set size:{}".format(len(inputFile)))
+            print("train size: {}".format(len(X_train)))            
+            print("test size: {}".format(len(X_test)))
+
+        sent = cppProcess.initReaders(X_train, y_train, X_test)
+        #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
         
         print(cppProcess.checkComplete())
         count =0
@@ -139,17 +144,25 @@ def startDataStream():
             y_vec = np.append(y_vec[1:],0.0)
         
             ## display results ##
-            results = cppProcess.getResults()
+            #results = cppProcess.getResults()
 
 
        
         ### Results ###
         results = cppProcess.getResults()
         
-        print("return results: {}".format(results))    
-        saveResults(results)
+        df_results = pd.DataFrame(results)
+        print(df_results.shape)
+        print(y_test.shape)
+        df_results['label'] = y_test
+        df_results = df_results.rename(columns={ df_results.columns[0]: "id",df_results.columns[1]: "predicted",df_results.columns[2]: "latency",df_results.columns[3]: "processTime"  })
+        #print("return results: {}".format(results))    
+        print("return results: {} rows processed".format(len(df_results)))    
+        print(df_results.head())    
+        saveResults(df_results)
         #input()
         
 if __name__ == "__main__":
     startDataStream()
+    print("program end!")
     

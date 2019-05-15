@@ -25,8 +25,8 @@ class Processor:
                 print("train: {}".format(len(train)))
                 print("labels: {}".format(len(labels)))
 
-                print("train: {}".format(train[0]))
-                print("labels: {}".format(labels[0]))
+                print("train first row: {}".format(train[0]))
+                print("label first row: {}".format(labels[0]))
 
             print("knn fit")
             
@@ -65,7 +65,7 @@ class Processor:
         except:
             print(traceback.format_exc())   
             
-        print(type(result))
+        #print(type(result))
         return np.array2string(result, formatter={'float_kind':lambda x: "%.2f" % result})
 
 
