@@ -366,14 +366,20 @@ int datasetStream::processData(py::object processMethod) {
 			if (DEBUG == true)
 				py::print("Processing Thread Active");
 			
-			auto output = processMethod.attr("process")(row);
+			py::object output = processMethod.attr("process")(row);
 			py::print(output);
-			//std::vector< std::string> result = output;
+			std::string res = output.cast<std::string>();
+			std::vector< std::string> result;
+			result.push_back(res);
+			
+			
 			//py::print(result);
 			py::gil_scoped_release release;
 			auto end = std::chrono::steady_clock::now();
-			std::vector< std::string> result = row;
-			//result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()));
+			//std::vector< std::string> result = row;			
+			//result.push_back(end);
+
+			result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()));
 			{
 				std::lock_guard<std::mutex> guard(outputQueueMutex);
 				outputQueue.push_back(result);

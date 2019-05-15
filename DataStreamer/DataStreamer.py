@@ -107,7 +107,8 @@ def startDataStream():
         print("classes of labels are:{}".format(le.classes_))
         labels_encoded = le.transform(labels)
     
-        inputFile = inputFile.apply(preprocessing.LabelEncoder().fit_transform)
+        inputFile, le_list = fit_transform_cols(inputFile)
+        #inputFile = inputFile.apply(preprocessing.LabelEncoder().fit_transform)
         #print(inputFile)
         inputFile = inputFile.astype(str)
         inputFile = inputFile.values.tolist()

@@ -63,8 +63,10 @@ class Processor:
             if Debug:
                 print("knn result:{}".format(result))       
         except:
-            print(traceback.format_exc())        
-        return result.tolist()
+            print(traceback.format_exc())   
+            
+        print(type(result))
+        return np.array2string(result, formatter={'float_kind':lambda x: "%.2f" % result})
 
 
     def debugPrint(self):        
