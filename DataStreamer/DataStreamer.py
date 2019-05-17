@@ -38,7 +38,7 @@ def update_line(hl, new_data):
 def saveResults(data, filename=None):
     if filename == None:
         filename = time.strftime("%Y%m%d-%H%M%S") + '.csv'
-    data.to_csv(resultsFilePath+filename)
+    data.to_csv(resultsFilePath+filename, index=False)
     return 0 
 
 # a better working implementation of the fit transform function available in the label encoder library. Adds in the features
@@ -97,7 +97,7 @@ def startDataStream():
         #    inputFile.append(row.encode('utf-8'))
         #    print('currently reading {}  rows \r'.format(count), end ="")
         #csvfile.close()  
-                           
+        csv_start_time = time.monotonic()                           
         data = pd.read_csv(CSVfileName, header = None, nrows = MAXROWS)
 
         labels = (data.iloc[:,41])        
@@ -122,6 +122,8 @@ def startDataStream():
             print("total set size:{}".format(len(inputFile)))
             print("train size: {}".format(len(X_train)))            
             print("test size: {}".format(len(X_test)))
+        start_time = time.monotonic()
+        print("csv read in: {} seconds".format(start_time - csv_start_time))
 
         sent = cppProcess.initReaders(X_train, y_train, X_test)
         #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
@@ -149,18 +151,29 @@ def startDataStream():
 
        
         ### Results ###
-        results = cppProcess.getResults()
         
+        results = cppProcess.getResults()
+        end_time = time.monotonic()
+        print("results processed in: {} seconds".format(end_time - start_time))
+        print(type(results))
         df_results = pd.DataFrame(results)
         print(df_results.shape)
         print(y_test.shape)
+
+        # if the y_test array isn't full, initialize it to NAN values so it can be added to the output for consistency sake.
+        if len(y_test) == 0:  
+            y_test = np.full(len(df_results.index), np.nan)
+
         df_results['label'] = y_test
-        df_results = df_results.rename(columns={ df_results.columns[0]: "id",df_results.columns[1]: "predicted",df_results.columns[2]: "latency",df_results.columns[3]: "processTime"  })
+        print(df_results.head())
+        df_results = df_results.rename(columns={ df_results.columns[0]: "predicted",df_results.columns[1]: "latency",df_results.columns[2]: "processTime",df_results.columns[3]: "Label"  })
         #print("return results: {}".format(results))    
         print("return results: {} rows processed".format(len(df_results)))    
         print(df_results.head())    
         saveResults(df_results)
         #input()
+
+        
         
 if __name__ == "__main__":
     startDataStream()

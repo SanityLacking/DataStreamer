@@ -97,7 +97,7 @@ public:
 	const int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
 	const int LOADBALANCEINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
 	const int MAXLOAD = 10; //number of waiting items before we need to start doing something about it.
-	const int MAXREADERS = 2;
+	const int MAXREADERS = 6;
 	const int LBMETHOD = 4; // what load balancing method to use 
 							//option 1, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
 							//option 2, remove newest elements	
