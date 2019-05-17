@@ -222,6 +222,11 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, s
 	return (int)dataset.size();
 }
 
+inline const char * const BoolToString(bool b)
+{
+	return b ? "true" : "false";
+}
+
 // return bool to check if processing is complete. 
 bool datasetStream::checkComplete()
 {
@@ -229,10 +234,14 @@ bool datasetStream::checkComplete()
 	if (datasetQueue.empty() && inputQueue.empty() && ProcessComplete){
 		JobComplete = true;
 		py::gil_scoped_acquire acquire;
+		//py::print("dsQueue: " + std::to_string(datasetQueue.size()) + ", inputQueue: " + std::to_string(inputQueue.size()) + ", ProcessComplete: " + BoolToString(ProcessComplete));
 		py::print("job finished");
 		py::gil_scoped_acquire release;
 	}
 	else {
+		//py::gil_scoped_acquire acquire;
+		//py::print("dsQueue: "+std::to_string(datasetQueue.size())+", inputQueue: "+ std::to_string(inputQueue.size())+ ", ProcessComplete: " + BoolToString(ProcessComplete));
+		//py::gil_scoped_acquire release;
 		JobComplete = false;
 		
 	}
@@ -341,65 +350,80 @@ int datasetStream::processData(py::object processMethod) {
 	py::print("Processing Thread Initialized");
 	py::gil_scoped_release release;
 	while (true) { //TODO, come up with a better loop check for this.
-		//py::gil_scoped_acquire();
-		auto start = std::chrono::steady_clock::now();
-		row.clear();
-		//check for input rows to process
+		
+		try
 		{
-			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			if (!inputQueue.empty()) {
-				row = inputQueue.front();
-				inputQueue.pop_front();
-			}
-		}
-		if (!row.empty()) {
-			ProcessComplete = false;
-			//do some processing
-			//double result = knn.KNNprocess(row);
-			//put results in the outputStack
-			/* Acquire GIL before calling Python code */
-			
-
-			// get the start time that the row was passed to input queue from end of row and drop time from row for processing.
-			//Convert signed integral type to time_point
-			auto timeStart = std::stoll(row.back());
-			row.pop_back();
-			std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> dt{ std::chrono::milliseconds{timeStart} };
-
-			py::gil_scoped_acquire acquire;
-			if (DEBUG == true)
-				py::print("Processing Thread Active");
-			
-			py::object output = processMethod.attr("process")(row);
-			if (DEBUG == true)
-				py::print(output);
-			std::string res = output.cast<std::string>();
-			std::vector< std::string> result;
-			result.push_back(res);
-			
-			
-			//py::print(result);
-			py::gil_scoped_release release;
-			auto end = std::chrono::steady_clock::now();
-			
-			//std::vector< std::string> result = row;			
-			//result.push_back(end);
-			result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())); //process time
-			result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - dt).count())); //time from input to process finished
-
-			
+			//py::gil_scoped_acquire();
+			auto start = std::chrono::steady_clock::now();
+			row.clear();
+			//check for input rows to process
 			{
-				std::lock_guard<std::mutex> guard(outputQueueMutex);
-				outputQueue.push_back(result);
-			}			
+				std::lock_guard<std::mutex> guard(inputQueueMutex);
+				if (!inputQueue.empty()) {
+					py::gil_scoped_acquire acquire;
+						py::print("inputQueueSize: "+ std::to_string(inputQueue.size()));						
+					py::gil_scoped_acquire release;
+					row = inputQueue.front();
+					inputQueue.pop_front();
+				}
+			}
+			if (!row.empty()) {
+				ProcessComplete = false;
+				//do some processing
+				//double result = knn.KNNprocess(row);
+				//put results in the outputStack
+				/* Acquire GIL before calling Python code */
+
+
+				// get the start time that the row was passed to input queue from end of row and drop time from row for processing.
+				//Convert signed integral type to time_point
+				auto timeStart = std::stoll(row.back());
+				row.pop_back();
+				std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> dt{ std::chrono::milliseconds{timeStart} };
+
+				py::gil_scoped_acquire acquire;
+				if (DEBUG == true)
+					py::print("Processing Thread Active");
+
+				py::object output = processMethod.attr("process")(row);
+				if (DEBUG == true)
+					py::print(output);
+				std::string res = output.cast<std::string>();
+				std::vector< std::string> result;
+				result.push_back(res);
+
+
+				//py::print(result);
+				py::gil_scoped_release release;
+				auto end = std::chrono::steady_clock::now();
+
+				//std::vector< std::string> result = row;			
+				//result.push_back(end);
+				result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())); //process time
+				result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - dt).count())); //time from input to process finished
+
+
+				{
+					std::lock_guard<std::mutex> guard(outputQueueMutex);
+					outputQueue.push_back(result);
+				}
+			}
+			else {
+				/*py::gil_scoped_acquire acquire;
+				py::print("row empty");
+				py::gil_scoped_acquire release;*/
+			}
+			ProcessComplete = true;
+			std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
 		}
-		else {
+		catch (const std::exception& e)
+		{
 			py::gil_scoped_acquire acquire;
-			py::print("row empty");
+			py::print("processData encountered an Error:");
+			py::print(e);
 			py::gil_scoped_acquire release;
 		}
-		ProcessComplete = true;
-		std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
+		
 	}
 	return 0;
 }
@@ -447,18 +471,29 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 	while (!dataset.empty())
 	{
 		{
-			std::lock_guard<std::mutex> guard(inputQueueMutex);
-			std::vector< std::string> row = dataset.front();
+			try
+			{
+				std::lock_guard<std::mutex> guard(inputQueueMutex);
+				std::vector< std::string> row = dataset.front();
 
-			auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());			
-			// Convert time_point to signed integral type
-			auto integral_duration = now.time_since_epoch().count();
+				auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+				// Convert time_point to signed integral type
+				auto integral_duration = now.time_since_epoch().count();
 
 
 
-			row.push_back(std::to_string(integral_duration));
-			inputQueue.push_back(row);
-			dataset.pop_front();
+				row.push_back(std::to_string(integral_duration));
+				inputQueue.push_back(row);
+				dataset.pop_front();
+			}
+			catch (const std::exception& e)
+			{
+				py::gil_scoped_acquire acquire;
+				py::print("dataReader Encountered Error:");
+				py::print(e);
+				py::gil_scoped_acquire release;
+			}
+			
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
 	}

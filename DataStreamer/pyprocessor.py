@@ -65,7 +65,7 @@ class Processor:
         except:
             print(traceback.format_exc())   
             
-        #print(type(result))
+        print("result passback")
         return np.array2string(result, formatter={'float_kind':lambda x: "%.2f" % result})
 
 
