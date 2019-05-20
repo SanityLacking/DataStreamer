@@ -31,6 +31,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="pyprocessor.py" />
+    <Compile Include="Rtree.py" />
+    <Compile Include="rtreeBuilder.py" />
+    <Compile Include="rtreeNN.py" />
+    <Compile Include="rtreeRange.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|py36" />

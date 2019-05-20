@@ -35,6 +35,17 @@ def saveResults(data, filename=None):
     if filename == None:
         filename = time.strftime("%Y%m%d-%H%M%S") + '.csv'
     data.to_csv(config.resultsFilePath+filename, index=False)
+    return 0
+
+
+def caclulateErr(results):
+    df =pd.DataFrame()
+    df["result"] = results["predicted"].str.strip("[]")
+    df["truth"] = results["Label"]
+    df['result'] = df['result'].astype(np.float64)
+    df['truth'] = df['truth'].astype(np.float64)
+    res =df.loc[~(df['result'] == df['truth'])]
+    print("error rate: {}%".format(len(res)/len(results)*100))
     return 0 
 
 # a better working implementation of the fit transform function available in the label encoder library. Adds in the features
@@ -82,92 +93,85 @@ def startDataStream():
     count = 0
     inputFile =[]
     labels =[]
-    with open(config.CSVfileName, "r", newline='') as csvfile:
-        #for row in csvfile:
-        #    if config.MAXROWS > 0 and count >= config.MAXROWS:
-        #       break
-        #    count= count + 1
-        #    #break apart the data and the label
-        #    #print(type(row))
-        #    labels.append(row[41].encode('utf-8'))
-        #    inputFile.append(row.encode('utf-8'))
-        #    print('currently reading {}  rows \r'.format(count), end ="")
-        #csvfile.close()  
-        csv_start_time = time.monotonic()                           
-        data = pd.read_csv(config.CSVfileName, header = config.HEADER, nrows = config.MAXROWS)
+    csv_start_time = time.monotonic()                           
+    data = pd.read_csv(config.CSVfileName, header = config.HEADER, nrows = config.MAXROWS)
 
-        labels = (data.iloc[:,41])        
-        inputFile =data.drop([41], axis=1)                                        
-        le = preprocessing.LabelEncoder()
-        le.fit(labels)
-        print("classes of labels are:{}".format(le.classes_))
-        labels_encoded = le.transform(labels)
+    labels = (data.iloc[:,41])        
+    inputFile =data.drop([41], axis=1)                                        
+    le = preprocessing.LabelEncoder()
+    le.fit(labels)
+    print("classes of labels are:{}".format(le.classes_))
+    labels_encoded = le.transform(labels)
     
-        inputFile, le_list = fit_transform_cols(inputFile)
-        #inputFile = inputFile.apply(preprocessing.LabelEncoder().fit_transform)
-        #print(inputFile)
-        inputFile = inputFile.astype(str)
-        inputFile = inputFile.values.tolist()
-        labels = labels_encoded.astype(str)
+    inputFile, le_list = fit_transform_cols(inputFile)
+    #inputFile = inputFile.apply(preprocessing.LabelEncoder().fit_transform)
+    #print(inputFile)
+    inputFile = inputFile.astype(str)
+    inputFile = inputFile.values.tolist()
+    labels = labels_encoded.astype(str)
 
-        X_train, X_test, y_train, y_test = train_test_split(inputFile, labels, test_size=0.33, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(inputFile, labels, test_size=config.TESTSIZE, random_state=config.RANDOMSTATE)
 
-        #print(type(labels))                     
-        labels = labels.tolist()
+    #print(type(labels))                     
+    labels = labels.tolist()
+    if config.DEBUG:
+        print("total set size:{}".format(len(inputFile)))
+        print("train size: {}".format(len(X_train)))            
+        print("test size: {}".format(len(X_test)))
+    start_time = time.monotonic()
+    print("csv read in: {} seconds".format(start_time - csv_start_time))
+
+    sent = cppProcess.initReaders(X_train, y_train, X_test)
+    #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
+        
+    print(cppProcess.checkComplete())
+    count =0
+    size = 100
+    x_vec = np.linspace(0,1,size+1)[0:-1]
+    #y_vec = np.random.randn(len(x_vec))
+    #x_vec = np.zeros(shape=(1,1))
+    y_vec = np.zeros(shape=(100,1))
+    line1 = []
+    fig=plt.figure(figsize=(13,6))
+    while cppProcess.checkComplete() != True:
         if config.DEBUG:
-            print("total set size:{}".format(len(inputFile)))
-            print("train size: {}".format(len(X_train)))            
-            print("test size: {}".format(len(X_test)))
-        start_time = time.monotonic()
-        print("csv read in: {} seconds".format(start_time - csv_start_time))
-
-        sent = cppProcess.initReaders(X_train, y_train, X_test)
-        #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
+            print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
+        #y_vec[-1] = np.random.randn(1)
+        y_vec[-1] = cppProcess.getResultsCount()
+        line1 = live_plotter(x_vec,y_vec,line1, figure=fig)
+        y_vec = np.append(y_vec[1:],0.0)
         
-        print(cppProcess.checkComplete())
-        count =0
-        size = 100
-        x_vec = np.linspace(0,1,size+1)[0:-1]
-        #y_vec = np.random.randn(len(x_vec))
-        #x_vec = np.zeros(shape=(1,1))
-        y_vec = np.zeros(shape=(100,1))
-        line1 = []
-        fig=plt.figure(figsize=(13,6))
-        while cppProcess.checkComplete() != True:
-            if config.DEBUG:
-                print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
-            #y_vec[-1] = np.random.randn(1)
-            y_vec[-1] = cppProcess.getResultsCount()
-            line1 = live_plotter(x_vec,y_vec,line1, figure=fig)
-            y_vec = np.append(y_vec[1:],0.0)
-        
-            ## display results ##
-            #results = cppProcess.getResults()
+        ## display results ##
+        #results = cppProcess.getResults()
 
 
        
-        ### Results ###
+    ### Results ###
         
-        results = cppProcess.getResults()
-        end_time = time.monotonic()
-        print("results processed in: {} seconds".format(end_time - start_time))
-        print(type(results))
-        df_results = pd.DataFrame(results)
-        print(df_results.shape)
-        print(y_test.shape)
+    results = cppProcess.getResults()
+    end_time = time.monotonic()
+    print("results processed in: {} seconds".format(end_time - start_time))
+    print(type(results))
+    df_results = pd.DataFrame(results)
+    print(df_results.shape)
+    print(y_test.shape)
 
-        # if the y_test array isn't full, initialize it to NAN values so it can be added to the output for consistency sake.
-        if len(y_test) == 0:  
-            y_test = np.full(len(df_results.index), np.nan)
+    # if the y_test array isn't full, initialize it to NAN values so it can be added to the output for consistency sake.
+    if len(y_test) == 0:  
+        y_test = np.full(len(df_results.index), np.nan)
 
-        df_results['label'] = y_test
-        print(df_results.head())
-        df_results = df_results.rename(columns={ df_results.columns[0]: "predicted",df_results.columns[1]: "latency",df_results.columns[2]: "processTime",df_results.columns[3]: "Label"  })
-        #print("return results: {}".format(results))    
-        print("return results: {} rows processed".format(len(df_results)))    
-        print(df_results.head())    
-        saveResults(df_results)
-        #input()
+    df_results['label'] = y_test
+    print(df_results.head())
+    df_results = df_results.rename(columns={ df_results.columns[0]: "predicted",df_results.columns[1]: "latency",df_results.columns[2]: "processTime",df_results.columns[3]: "Label"  })
+    #print("return results: {}".format(results))    
+    print("return results: {} rows processed".format(len(df_results)))    
+    print(df_results.head())    
+
+    caclulateErr(df_results)
+
+
+    saveResults(df_results)
+    #input()
 
         
         
