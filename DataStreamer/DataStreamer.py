@@ -19,14 +19,10 @@ from sklearn.model_selection import train_test_split
 import seaborn as sns
 import matplotlib
 
-
+import config
 cppProcess = dsStream()
-#CSVfileName ="../datasets/kdd99-unsupervised-ad.csv"
-CSVfileName ="../datasets/kddcup_data_10_percent_corrected.csv"
-resultsFilePath ="../results/"
-MAXROWS = 100
 
-Debug = True
+
 
 #update the graph
 def update_line(hl, new_data):
@@ -38,7 +34,7 @@ def update_line(hl, new_data):
 def saveResults(data, filename=None):
     if filename == None:
         filename = time.strftime("%Y%m%d-%H%M%S") + '.csv'
-    data.to_csv(resultsFilePath+filename, index=False)
+    data.to_csv(config.resultsFilePath+filename, index=False)
     return 0 
 
 # a better working implementation of the fit transform function available in the label encoder library. Adds in the features
@@ -86,9 +82,9 @@ def startDataStream():
     count = 0
     inputFile =[]
     labels =[]
-    with open(CSVfileName, "r", newline='') as csvfile:
+    with open(config.CSVfileName, "r", newline='') as csvfile:
         #for row in csvfile:
-        #    if MAXROWS > 0 and count >= MAXROWS:
+        #    if config.MAXROWS > 0 and count >= config.MAXROWS:
         #       break
         #    count= count + 1
         #    #break apart the data and the label
@@ -98,7 +94,7 @@ def startDataStream():
         #    print('currently reading {}  rows \r'.format(count), end ="")
         #csvfile.close()  
         csv_start_time = time.monotonic()                           
-        data = pd.read_csv(CSVfileName, header = None, nrows = MAXROWS)
+        data = pd.read_csv(config.CSVfileName, header = config.HEADER, nrows = config.MAXROWS)
 
         labels = (data.iloc[:,41])        
         inputFile =data.drop([41], axis=1)                                        
@@ -118,7 +114,7 @@ def startDataStream():
 
         #print(type(labels))                     
         labels = labels.tolist()
-        if Debug:
+        if config.DEBUG:
             print("total set size:{}".format(len(inputFile)))
             print("train size: {}".format(len(X_train)))            
             print("test size: {}".format(len(X_test)))
@@ -138,7 +134,7 @@ def startDataStream():
         line1 = []
         fig=plt.figure(figsize=(13,6))
         while cppProcess.checkComplete() != True:
-            if Debug:
+            if config.DEBUG:
                 print('currently processed {} lines...\r'.format(cppProcess.getResultsCount()), end ="")                      
             #y_vec[-1] = np.random.randn(1)
             y_vec[-1] = cppProcess.getResultsCount()

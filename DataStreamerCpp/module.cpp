@@ -73,8 +73,6 @@ int threadCounter(int & x, int & y) {
 }
 */
 
-
-
 class datasetStream
 {
 public:

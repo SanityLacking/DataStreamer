@@ -1,5 +1,4 @@
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
 import sys
 import traceback
 import numpy as np
