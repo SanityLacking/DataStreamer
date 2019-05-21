@@ -14,7 +14,7 @@ import Rtree
 #import scanRange
 
 
-class test:
+class R_tree:
 
     def __init__(self, *args, **kwargs):       
         print("Rtree init")

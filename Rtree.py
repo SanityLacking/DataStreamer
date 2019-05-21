@@ -1,6 +1,8 @@
 '''
 Rtree.py
 Author: Yi Liu
+Author: Yi Liu  https://github.com/moment-of-peace/python-rtree
+Modified by: Cailen Robertson https://github.com/SanityLacking
 Classes representing parts of a r-tree
 '''
 import math
@@ -165,6 +167,9 @@ class Branch(Node):
         super().__init__(Bvalue, level)
         self.range = node.range[:]
         self.centre = node.centre[:]
+    
+    def size():        
+        return len(self.range)
 
     # choose a child which has a shortest distance from a given point
     def chooseChild(self, point):
