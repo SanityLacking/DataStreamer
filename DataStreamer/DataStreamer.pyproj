@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>546171e9-81f7-46fa-aadd-fbce01c3a04a</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>DataStreamer.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -27,6 +27,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DataStreamer.py" />
+    <Compile Include="main.py" />
     <Compile Include="pylive.py">
       <SubType>Code</SubType>
     </Compile>
