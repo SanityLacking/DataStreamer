@@ -81,7 +81,9 @@ public:
 	void startCounter(int x);
 	int getCounter();
 
-
+	int setVRate(std::vector<float>vRate);
+	int setVRateScalar(float vRate);
+	int setStepRate(float stepRate);
 	std::deque<std::vector< std::string> >  getResults(bool clear = false);
 	int getResultsCount();
 	std::deque<std::vector< std::string> >  getCurrentInput();
@@ -91,12 +93,12 @@ public:
 	bool checkComplete();
 	std::string initReadersDebug(std::vector<std::vector< std::string> >  inputData);
 
-	const int READERINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
-	const int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
-	const int LOADBALANCEINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
-	const int MAXLOAD = 10; //number of waiting items before we need to start doing something about it.
-	const int MAXREADERS = 6;
-	const int LBMETHOD = 4; // what load balancing method to use 
+	 int READERINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
+	 int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
+	 int LOADBALANCEINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
+	 int MAXLOAD = 10; //number of waiting items before we need to start doing something about it.
+	 int MAXREADERS = 6;
+	 int LBMETHOD = 4; // what load balancing method to use 
 							//option 1, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
 							//option 2, remove newest elements	
 							//option 3 remove newest elements in one go.
@@ -277,6 +279,26 @@ void datasetStream::startCounter(int x)
 		//std::thread thread1(threadSum, std::ref(val));
 		//thread1.detach();
 	}
+}
+int datasetStream::setVRate(std::vector<float> vRate)
+{
+	return 0;
+}
+int datasetStream::setVRateScalar(float vRate)
+{
+	
+	return 0;
+}
+int datasetStream::setStepRate(float stepRate)
+{
+	if (stepRate <= 0) {
+		stepRate = 0;
+		py::gil_scoped_acquire acquire;
+		py::print("Step Rate is equal to or less then zero, this can cause unexpected behavouir. You have been warned.");
+		py::gil_scoped_acquire release;
+	}
+	READERINTERVAL = stepRate;
+	return 0;
 }
 //int datasetStream::getCounter()
 //{
@@ -521,6 +543,10 @@ int datasetStream::dataR(std::vector<std::vector< std::string> >  &dataset) {
 PYBIND11_MODULE(DataStreamerCpp, m) {
 	py::class_<datasetStream>(m, "dsStream")
 		.def(py::init())
+		.def("setStepRate", &datasetStream::setStepRate, "set the step rate")
+		.def("setVRate", &datasetStream::setVRate, "set the variable rate")
+		.def("setVRateScalar", &datasetStream::setVRateScalar, "set the variable Rate with a scalar")
+		//.def("setStepRate", &datasetStream::setStepRate, "set the step rate")
 		.def("sum", &datasetStream::sum, "sum to check its working")
 		.def("startCounter", &datasetStream::startCounter, "thread Start")		
 		.def("getResults", &datasetStream::getResults, "get the results", py::arg("clear") = false)
