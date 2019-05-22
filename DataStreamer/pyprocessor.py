@@ -54,13 +54,13 @@ class Processor:
             input = input.astype(np.float64)
             input = input.reshape(1,-1)
 
-            if Debug:
-                print("predict Input shape: {}".format(input.shape))            
+            #if Debug:
+                #print("predict Input shape: {}".format(input.shape))            
 
             result = self.knn.predict(input)
 
-            if Debug:
-                print("knn result:{}".format(result))       
+            #if Debug:
+                #print("knn result:{}".format(result))       
         except:
             print(traceback.format_exc())   
             

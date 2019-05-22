@@ -1,6 +1,7 @@
 from DataStreamerCpp import dsStream  #custom module that wraps the cpp file api.
 import numpy as np
 import pandas as pd
+import collections
 import time
 ## Purpose of this class file is to provide an easy to read python class for quick intergration into a python project.
 ## rather then having to examine the c++ code and output, you can just use this wrapper. 
@@ -22,7 +23,7 @@ class DataStreamer(object):
     #randomRate: random noise to apply to the rate per step. default is 0
     #randomStep: TODO
     #loadMethod: TODO set which load method to use, default, no load balancer engaged.
-    def initialize(vRate, stepRate = 10, randomRate = 0, randomStep = 0):
+    def initialize(self, vRate, stepRate = 10, randomRate = 0, randomStep = 0):
         if isinstance(vRate,collections.Sequence):  
             #vRate is a sequence, follow the sequence step by step 
             if len(vRate) > 0:
@@ -41,15 +42,16 @@ class DataStreamer(object):
         return output
 
 
-    def checkComplete(self ):
+    def checkComplete(self):
         output = self.cppProcessor.checkComplete() 
+        print("complete? {}".format(output))
         return output
 
-    def getResultsCount(self ):
+    def getResultsCount(self):
         output = self.cppProcessor.getResultsCount()
         return output
 
-    def getResults(self ):
+    def getResults(self):
         output = self.cppProcessor.getResults()
         return output
     

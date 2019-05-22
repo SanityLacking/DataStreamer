@@ -123,6 +123,9 @@ def startDataStream():
     start_time = time.monotonic()
     print("csv read in: {} seconds".format(start_time - csv_start_time))
 
+
+    ds.initialize(100) 
+
     sent = ds.process(X_train, y_train, X_test)
     #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
         
@@ -135,7 +138,7 @@ def startDataStream():
     y_vec = np.zeros(shape=(100,1))
     line1 = []
     fig=plt.figure(figsize=(13,6))
-    while ds.checkComplete != True:
+    while ds.checkComplete() != True:
         if config.DEBUG:
             print('currently processed {} lines...\r'.format(ds.getResultsCount()), end ="")                      
         #y_vec[-1] = np.random.randn(1)
@@ -169,7 +172,7 @@ def startDataStream():
     print("return results: {} rows processed".format(len(df_results)))    
     print(df_results.head())    
 
-    print(ds.caclulateErr(df_results))
+    print(DS.caclulateErr(df_results))
 
 
     saveResults(df_results)

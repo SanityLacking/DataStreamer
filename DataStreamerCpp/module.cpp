@@ -97,7 +97,8 @@ public:
 	 int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
 	 int LOADBALANCEINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
 	 int MAXLOAD = 10; //number of waiting items before we need to start doing something about it.
-	 int MAXREADERS = 6;
+	 int READERCOUNT = 6;
+	 const int READERSLIMIT = 10000; 
 	 int LBMETHOD = 4; // what load balancing method to use 
 							//option 1, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
 							//option 2, remove newest elements	
@@ -205,7 +206,7 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, s
 	// getResults function returns any data that is in the OUT pile to the python caller for them to display.
 
 	// start worker threads to share the dataset queue and move it to the input queue
-	for (int i = 0; i < MAXREADERS; i++) {
+	for (int i = 0; i < READERCOUNT; i++) {
 		std::thread dataReaderThread(&datasetStream::dataReader, this, std::ref(datasetQueue), std::ref(inputQueue));
 		dataReaderThread.detach();
 	}
@@ -275,7 +276,7 @@ int datasetStream::sum(int n)
 void datasetStream::startCounter(int x)
 {
 	val = x;
-	for (int i = 0; i < MAXREADERS; i++) {
+	for (int i = 0; i < READERCOUNT; i++) {
 		//std::thread thread1(threadSum, std::ref(val));
 		//thread1.detach();
 	}
@@ -286,7 +287,20 @@ int datasetStream::setVRate(std::vector<float> vRate)
 }
 int datasetStream::setVRateScalar(float vRate)
 {
-	
+	// first try, create one thread per amount you want to process
+	if (vRate > READERSLIMIT) {
+		vRate = READERSLIMIT;
+		py::gil_scoped_acquire acquire;
+		py::print("vRate cannot exceed READERSLIMIT of "+std::to_string(READERSLIMIT)+". vRate capped to limit.");
+		py::gil_scoped_acquire release;
+	}
+	else if (vRate <= 0) {
+		vRate = 0;
+		py::gil_scoped_acquire acquire;
+		py::print("vRate shouldn't be lower or equal to zero. this will stall your program indefinitiely.");
+		py::gil_scoped_acquire release;
+	}
+	READERCOUNT = vRate;
 	return 0;
 }
 int datasetStream::setStepRate(float stepRate)
