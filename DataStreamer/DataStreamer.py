@@ -23,13 +23,20 @@ class DataStreamer(object):
     #randomRate: random noise to apply to the rate per step. default is 0
     #randomStep: TODO
     #loadMethod: TODO set which load method to use, default, no load balancer engaged.
-    def initialize(self, vRate, stepRate = 10, randomRate = 0, randomStep = 0):
-        if isinstance(vRate,collections.Sequence):  
+    def initialize(self, vR, stepRate = 10, randomRate = 0, randomStep = 0):        
+        vRate = vR
+        if isinstance(vRate,(collections.Sequence, np.ndarray, pd.DataFrame)):  
             #vRate is a sequence, follow the sequence step by step 
+            print("sequence")
+            if isinstance(vRate,np.ndarray):
+                vRate = vRate.tolist()
+            if isinstance(vRate,pd.DataFrame): #TODO, check how the interaction between dataframes and the list works for this.                
+                vRate = vRate.values.tolist()
             if len(vRate) > 0:
                 self.cppProcessor.setVRate(vRate)
             else: 
                 raise ValueError('Variable rates in Initialize must not be empty, consider using a scalar.')
+            
         else: 
             #vRate is a scalar
             self.cppProcessor.setVRateScalar(vRate)
@@ -43,8 +50,7 @@ class DataStreamer(object):
 
 
     def checkComplete(self):
-        output = self.cppProcessor.checkComplete() 
-        print("complete? {}".format(output))
+        output = self.cppProcessor.checkComplete()        
         return output
 
     def getResultsCount(self):

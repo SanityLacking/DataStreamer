@@ -115,6 +115,8 @@ private:
 	std::vector<std::vector< std::string> > inputStack = {}; //stack for the incoming reads to be placed by the datareader threads	
 	std::deque<std::vector< std::string> > inputQueue = {}; //the queue of the input data to be processed. this is separate then the dataset queue to simulate incomming input load.
 
+	std::deque<float> vQueue = {}; //queue for storing the variable rate. if rate is a single scalar, this queue will be of size 1
+
 	bool JobComplete = false;
 	bool ProcessComplete = false;
 	std::vector<std::vector< std::string> > outputStack = {};	 //output stack of all processed elements
@@ -126,13 +128,13 @@ private:
 
 
 	py::object processMethod; 
-
+	
 	//std::mutex readerMutex;
 	std::mutex classMutex; //very important step, make sure your mutexes are defined inside your class so that your classbased functions can see them.
 	std::mutex inputQueueMutex;
 	std::mutex outputQueueMutex;
 	int dataR(std::vector<std::vector< std::string> >  &dataset); //threaded data reader function
-	int dataReader(std::deque<std::vector< std::string> > &dataset, std::deque<std::vector< std::string> > &inputQueue);
+	int dataReader(std::deque<std::vector< std::string> > &dataset, std::deque<std::vector< std::string> > &inputQueue, std::deque<float> vQueue, int threadID);
 	std::deque<std::string> inputStackTiming;
 	bool pContinue = true;
 	int val;
@@ -206,8 +208,8 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, s
 	// getResults function returns any data that is in the OUT pile to the python caller for them to display.
 
 	// start worker threads to share the dataset queue and move it to the input queue
-	for (int i = 0; i < READERCOUNT; i++) {
-		std::thread dataReaderThread(&datasetStream::dataReader, this, std::ref(datasetQueue), std::ref(inputQueue));
+	for (int i = 1; i <= READERCOUNT; i++) {
+		std::thread dataReaderThread(&datasetStream::dataReader, this, std::ref(datasetQueue), std::ref(inputQueue), vQueue, i);
 		dataReaderThread.detach();
 	}
 
@@ -281,10 +283,21 @@ void datasetStream::startCounter(int x)
 		//thread1.detach();
 	}
 }
+
+//set the VRate
 int datasetStream::setVRate(std::vector<float> vRate)
-{
+{	
+	vQueue = std::deque<float>(vRate.begin(),vRate.end());
+	int it = *std::max_element(std::begin(vRate), std::end(vRate));	
+	READERCOUNT = it;
+	py::gil_scoped_acquire acquire;
+	py::print("vQueue:");
+	py::print(vQueue);
+	py::gil_scoped_acquire release;
 	return 0;
 }
+
+//set the VRate
 int datasetStream::setVRateScalar(float vRate)
 {
 	// first try, create one thread per amount you want to process
@@ -300,9 +313,13 @@ int datasetStream::setVRateScalar(float vRate)
 		py::print("vRate shouldn't be lower or equal to zero. this will stall your program indefinitiely.");
 		py::gil_scoped_acquire release;
 	}
+	vQueue.empty();
+	vQueue.push_back(vRate);
 	READERCOUNT = vRate;
 	return 0;
 }
+
+//set the step rate
 int datasetStream::setStepRate(float stepRate)
 {
 	if (stepRate <= 0) {
@@ -500,25 +517,50 @@ int datasetStream::loadbalance() {
 }
 
 // Implementation of worker threads using queues
-int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, std::deque<std::vector< std::string> > &inputQueue) {
+int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, std::deque<std::vector< std::string> > &inputQueue, std::deque<float> vQueue, int threadID){
 	//take line from dataset and put it on input stack. then sleep
+	int vRate = 0;
 	while (!dataset.empty())
 	{
 		{
+
 			try
 			{
-				std::lock_guard<std::mutex> guard(inputQueueMutex);
-				std::vector< std::string> row = dataset.front();
+				//get val from vQueue, if vQueue size is equal to 1, don't pop_front else pop_front
+				// this means that once the queue is down to one value left, it will remain that way until the processing is finished.
+				vRate = vQueue.front();
+				/*std::string str("vRate:");
+				str = str + std::to_string(vRate);
+				py::gil_scoped_acquire acquire;			
+				py::print(str);				
+				py::gil_scoped_acquire release;*/
+				if (vQueue.size() > 1) {
+					vQueue.pop_front();				
+				}
 
-				auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
-				// Convert time_point to signed integral type
-				auto integral_duration = now.time_since_epoch().count();
-
-
-
-				row.push_back(std::to_string(integral_duration));
-				inputQueue.push_back(row);
-				dataset.pop_front();
+				//if val > threadID for this step, read input.
+				if (vRate >= threadID) {
+					/*py::gil_scoped_acquire acquire;
+					py::print("threadProcessing: " + std::to_string(threadID));
+					py::print(vQueue);
+					py::gil_scoped_acquire release;*/
+					std::lock_guard<std::mutex> guard(inputQueueMutex);
+					std::vector< std::string> row = dataset.front();
+					
+					auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+					// Convert time_point to signed integral type
+					auto integral_duration = now.time_since_epoch().count();
+					row.push_back(std::to_string(integral_duration));
+					inputQueue.push_back(row);
+					dataset.pop_front();
+				}
+				else {
+					/*py::gil_scoped_acquire acquire;
+					py::print("thread not processing: " + std::to_string(threadID)+" because VR = "+std::to_string(vRate));
+					py::gil_scoped_acquire release;*/
+				}
+				//else do not read input, instead sleep till next step.
+				
 			}
 			catch (const std::exception& e)
 			{

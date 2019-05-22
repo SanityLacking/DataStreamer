@@ -124,7 +124,10 @@ def startDataStream():
     print("csv read in: {} seconds".format(start_time - csv_start_time))
 
 
-    ds.initialize(100) 
+    vList=np.linspace(1,100,100)
+    vList=np.append(vList,np.linspace(100,1,100))
+    print(vList)
+    ds.initialize(1000) 
 
     sent = ds.process(X_train, y_train, X_test)
     #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
@@ -158,15 +161,15 @@ def startDataStream():
     print("results processed in: {} seconds".format(end_time - start_time))
     print(type(results))
     df_results = pd.DataFrame(results)
-    print(df_results.shape)
-    print(y_test.shape)
+    #print(df_results.shape)
+    #print(y_test.shape)
 
     # if the y_test array isn't full, initialize it to NAN values so it can be added to the output for consistency sake.
     if len(y_test) == 0:  
         y_test = np.full(len(df_results.index), np.nan)
 
     df_results['label'] = y_test
-    print(df_results.head())
+    #print(df_results.head())
     df_results = df_results.rename(columns={ df_results.columns[0]: "predicted",df_results.columns[1]: "latency",df_results.columns[2]: "processTime",df_results.columns[3]: "Label"  })
     #print("return results: {}".format(results))    
     print("return results: {} rows processed".format(len(df_results)))    
