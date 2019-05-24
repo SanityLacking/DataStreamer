@@ -124,7 +124,7 @@ def startDataStream():
     print("csv read in: {} seconds".format(start_time - csv_start_time))
 
 
-    vList=np.linspace(1,10,10)
+    vList=np.linspace(1,100,100)
     #vList=np.append(vList,np.linspace(100,1,100))
     print(vList)
     ds.initialize(10) 
