@@ -52,6 +52,9 @@ class DataStreamer(object):
     def checkComplete(self):
         output = self.cppProcessor.checkComplete()        
         return output
+    def checkException(self):
+        output = self.cppProcessor.checkForThreadException()        
+        return output
 
     def getResultsCount(self):
         output = self.cppProcessor.getResultsCount()

@@ -124,10 +124,10 @@ def startDataStream():
     print("csv read in: {} seconds".format(start_time - csv_start_time))
 
 
-    vList=np.linspace(1,100,100)
-    vList=np.append(vList,np.linspace(100,1,100))
+    vList=np.linspace(1,10,10)
+    #vList=np.append(vList,np.linspace(100,1,100))
     print(vList)
-    ds.initialize(1000) 
+    ds.initialize(10) 
 
     sent = ds.process(X_train, y_train, X_test)
     #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
@@ -142,8 +142,9 @@ def startDataStream():
     line1 = []
     fig=plt.figure(figsize=(13,6))
     while ds.checkComplete() != True:
-        if config.DEBUG:
-            print('currently processed {} lines...\r'.format(ds.getResultsCount()), end ="")                      
+        #print(ds.checkException())
+        #if config.DEBUG:
+        #   print('currently processed {} lines...\r'.format(ds.getResultsCount()))                      
         #y_vec[-1] = np.random.randn(1)
         y_vec[-1] = ds.getResultsCount()
         line1 = live_plotter(x_vec,y_vec,line1, figure=fig)
