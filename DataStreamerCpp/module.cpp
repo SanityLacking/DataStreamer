@@ -6,6 +6,7 @@
 #include <cmath>
 #include "pybind11/numpy.h"
 
+#include <atomic>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -118,8 +119,8 @@ private:
 
 	std::deque<float> vQueue = {}; //queue for storing the variable rate. if rate is a single scalar, this queue will be of size 1
 
-	bool JobComplete = false;
-	bool ProcessComplete = false;
+	std::atomic<bool> JobComplete = false;
+	std::atomic<bool> ProcessComplete = false;
 	std::vector<std::vector< std::string> > outputStack = {};	 //output stack of all processed elements
 	std::deque<std::vector< std::string> > outputQueue = {};	//output queue to be passed back to the calling program
 
@@ -133,7 +134,7 @@ private:
 
 
 	//std::mutex readerMutex;
-	std::mutex classMutex; //very important step, make sure your mutexes are defined inside your class so that your classbased functions can see them.
+	std::mutex datasetMutex; //very important step, make sure your mutexes are defined inside your class so that your classbased functions can see them.
 	std::mutex inputQueueMutex;
 	std::mutex outputQueueMutex;
 	int dataR(std::vector<std::vector< std::string> >  &dataset); //threaded data reader function
@@ -248,6 +249,9 @@ bool datasetStream::checkComplete()
 			//iQ = inputQueue.empty();
 			//dsQsize = datasetQueue.size();
 			//iQsize = inputQueue.size();
+
+
+		// If empty() is thread safe, checking empty first, locking, and then rechecking may avoid an unnecessary lock. 
 		
 
 		if (datasetQueue.empty() && inputQueue.empty() && ProcessComplete) {
@@ -262,15 +266,13 @@ bool datasetStream::checkComplete()
 			py::print("dsQueue: " + std::to_string(datasetQueue.size()) + ", inputQueue: " + std::to_string(inputQueue.size()) + ", ProcessComplete: " + BoolToString(ProcessComplete));
 			py::gil_scoped_acquire release;
 			JobComplete = false;
-
-
 		}
 	}
 	catch (const std::exception& e)
 	{
 		std::cout << "error" << std::endl;
 		py::gil_scoped_acquire acquire;
-		py::print("eerr");
+		py::print(e.what());
 		py::gil_scoped_acquire release;
 	}
 	std::cout <<"JobComplete: "<< BoolToString(JobComplete) << std::endl;
@@ -424,10 +426,8 @@ int datasetStream::processData(py::object processMethod) {
 
 	py::print("Processing Thread Initialized");
 	py::gil_scoped_release release;
-	while (!JobComplete) { //TODO, come up with a better loop check for this.
-		
-		try
-		{
+	while (!JobComplete) { //TODO, come up with a better loop check for this.		
+		try	{
 			//py::gil_scoped_acquire();
 			auto start = std::chrono::steady_clock::now();
 			row.clear();
@@ -443,23 +443,16 @@ int datasetStream::processData(py::object processMethod) {
 				}
 			}
 			if (!row.empty()) {
-				ProcessComplete = false;
-				//do some processing
-				//double result = knn.KNNprocess(row);
-				//put results in the outputStack
-				/* Acquire GIL before calling Python code */
-
-
+				ProcessComplete = false;				
 				// get the start time that the row was passed to input queue from end of row and drop time from row for processing.
 				//Convert signed integral type to time_point
 				auto timeStart = std::stoll(row.back());
-				row.pop_back();
+				row.pop_back(); //TODO, make this optional to record the start time?
 				std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> dt{ std::chrono::milliseconds{timeStart} };
 
 				py::gil_scoped_acquire acquire;
 				if (DEBUG == true)
 					py::print("Processing Thread Active");
-
 				py::object output = processMethod.attr("process")(row);
 
 				if (DEBUG == true)
@@ -475,8 +468,6 @@ int datasetStream::processData(py::object processMethod) {
 				//result.push_back(end);
 				result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())); //process time
 				result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - dt).count())); //time from input to process finished
-
-
 				{
 					std::lock_guard<std::mutex> guard(outputQueueMutex);
 					outputQueue.push_back(result);
@@ -562,12 +553,9 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 	int vRate = 0;
 	try
 	{
-		while (!dataset.empty())
-		{
-			{
-
-				try
-				{
+		std::vector< std::string> row;
+		while (!dataset.empty()){			
+				try{
 					//get val from vQueue, if vQueue size is equal to 1, don't pop_front else pop_front
 					// this means that once the queue is down to one value left, it will remain that way until the processing is finished.
 					vRate = vQueue.front();
@@ -586,9 +574,17 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 						py::print("threadProcessing: " + std::to_string(threadID));
 						py::print(vQueue);
 						py::gil_scoped_acquire release;*/
+						std::cout << threadID << std::endl;
+						row.clear();
 						std::lock_guard<std::mutex> guard(inputQueueMutex);
-						std::vector< std::string> row = dataset.front();
-
+						if(!dataset.empty()) //double check that dataset is valid
+							row = dataset.front(); 
+						else {                 //else skip to the loop end.     
+							py::gil_scoped_acquire acquire;
+							py::print("thread not processing: " + std::to_string(threadID) + " pre-emptive finish.");
+							py::gil_scoped_acquire release;
+							continue;
+						}
 						auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 						// Convert time_point to signed integral type
 						auto integral_duration = now.time_since_epoch().count();
@@ -602,17 +598,13 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 						py::gil_scoped_acquire release;
 					}
 					//else do not read input, instead sleep till next step.
-
 				}
-				catch (const std::exception& e)
-				{
+				catch (const std::exception& e){
 					py::gil_scoped_acquire acquire;
 					py::print("dataReader Encountered Error:");
 					py::print(e.what());
 					py::gil_scoped_acquire release;
-				}
-
-			}
+				}		
 			std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
 		}
 		//std::cout << "DataReader complete: " << std::to_string(threadID) << std::endl;
@@ -620,11 +612,11 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 		py::print("DataReader complete:" + std::to_string(threadID));
 		py::gil_scoped_acquire release;*/
 	}
-	catch (const std::exception& e)
+	catch (const std::exception& b)
 	{
 		py::gil_scoped_acquire acquire;
 		py::print("error!: threadID: " + std::to_string(threadID));
-		py::print(e.what());
+		py::print(b.what());
 		py::gil_scoped_acquire release;
 	}
 
