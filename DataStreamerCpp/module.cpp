@@ -580,9 +580,11 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 						if(!dataset.empty()) //double check that dataset is valid
 							row = dataset.front(); 
 						else {                 //else skip to the loop end.     
-							py::gil_scoped_acquire acquire;
-							py::print("thread not processing: " + std::to_string(threadID) + " pre-emptive finish.");
-							py::gil_scoped_acquire release;
+							if (DEBUG) {
+								py::gil_scoped_acquire acquire;
+								py::print("thread not processing: " + std::to_string(threadID) + " pre-emptive finish.");
+								py::gil_scoped_acquire release;
+							}
 							continue;
 						}
 						auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
@@ -593,9 +595,11 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 						dataset.pop_front();
 					}
 					else {
-						py::gil_scoped_acquire acquire;
-						py::print("thread not processing: " + std::to_string(threadID)+" because VR = "+std::to_string(vRate));
-						py::gil_scoped_acquire release;
+						if (DEBUG) {
+							py::gil_scoped_acquire acquire;
+							py::print("thread not processing: " + std::to_string(threadID) + " because VR = " + std::to_string(vRate));
+							py::gil_scoped_acquire release;
+						}
 					}
 					//else do not read input, instead sleep till next step.
 				}

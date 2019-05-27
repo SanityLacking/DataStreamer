@@ -124,9 +124,9 @@ def startDataStream():
     print("csv read in: {} seconds".format(start_time - csv_start_time))
 
 
-    vList=np.linspace(1,100,100)
-    #vList=np.append(vList,np.linspace(100,1,100))
-    print(vList)
+    vRate=np.linspace(1,100,100)
+    vRate=np.append(vRate,np.linspace(100,1,100))
+    print(vRate)
     ds.initialize(10) 
 
     sent = ds.process(X_train, y_train, X_test)
@@ -177,6 +177,7 @@ def startDataStream():
     print(df_results.head())    
 
     print(DS.caclulateErr(df_results))
+    print(DS.caclulateLatency(df_results, vRate))
 
 
     saveResults(df_results)

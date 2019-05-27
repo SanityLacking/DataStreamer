@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import collections
 import time
+import config ## TODO decide whether to use this or not, or to provide some sort of different option for these variables.
+
 ## Purpose of this class file is to provide an easy to read python class for quick intergration into a python project.
 ## rather then having to examine the c++ code and output, you can just use this wrapper. 
 ## additionally configuration args can be added in here without the need to expose them to the main file.
@@ -77,7 +79,13 @@ class DataStreamer(object):
         #output = self.cppProcessor.resume()
         return 0
 
-def caclulateErr(results, print=False):
+
+
+    #####
+    ##### Metric Calculation Section
+    #####
+
+def caclulateErr(results, Print=False):
     df =pd.DataFrame()
     df["result"] = results["predicted"].str.strip("[]")
     df["truth"] = results["Label"]
@@ -85,6 +93,19 @@ def caclulateErr(results, print=False):
     df['truth'] = df['truth'].astype(np.float64)
     res =df.loc[~(df['result'] == df['truth'])]
     output ="error rate: {}%".format(len(res)/len(results)*100)
-    if print:
+    if Print:
         print(output)
     return output
+
+
+def caclulateLatency(results, vRate=None, Print=False):
+    df =pd.DataFrame()    
+    df['latency'] = results['latency'].astype(np.float64)
+    #if isinstance(le_list,(,)):
+    #df['vRate'] = vRate
+    res =df.loc[~(df['latency'] >= config.LATENCYBOUND)]
+    output ="exceed rate: {}%".format(len(res)/len(results)*100)
+    if Print:
+        print(output)
+    return output
+
