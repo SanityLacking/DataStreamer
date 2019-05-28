@@ -40,15 +40,6 @@ def saveResults(data, filename=None):
     return 0
 
 
-def caclulateErr(results):
-    df =pd.DataFrame()
-    df["result"] = results["predicted"].str.strip("[]")
-    df["truth"] = results["Label"]
-    df['result'] = df['result'].astype(np.float64)
-    df['truth'] = df['truth'].astype(np.float64)
-    res =df.loc[~(df['result'] == df['truth'])]
-    print("error rate: {}%".format(len(res)/len(results)*100))
-    return 0 
 
 # a better working implementation of the fit transform function available in the label encoder library. Adds in the features
 # I personally expected in it when I used it.
@@ -179,9 +170,9 @@ def startDataStream():
     print(DS.caclulateErr(df_results))
     print(DS.caclulateLatency(df_results, vRate))
 
-
+    
     saveResults(df_results)
-    #input()
+    input()
 
         
         

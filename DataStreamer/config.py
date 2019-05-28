@@ -10,3 +10,5 @@ RANDOMSTATE = 42
 PROCESSOR = "KNN"   #Options are "KNN", "RTREE"
 
 LATENCYBOUND = 100000 #upper bound for latency of data from input to processed. in microseconds aka, 1,000,000 to one second
+
+READERINTERVAL = 100 #time to sleep for each datareader in milliseconds aka 1000milli = 1second

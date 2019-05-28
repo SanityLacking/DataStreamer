@@ -4,7 +4,7 @@ import pandas as pd
 import collections
 import time
 import config ## TODO decide whether to use this or not, or to provide some sort of different option for these variables.
-
+import matplotlib.pyplot as plt
 ## Purpose of this class file is to provide an easy to read python class for quick intergration into a python project.
 ## rather then having to examine the c++ code and output, you can just use this wrapper. 
 ## additionally configuration args can be added in here without the need to expose them to the main file.
@@ -107,5 +107,11 @@ def caclulateLatency(results, vRate=None, Print=False):
     output ="exceed rate: {}%".format(len(res)/len(results)*100)
     if Print:
         print(output)
+
+    vFig =plt.figure()
+    vAx = vFig.add_subplot(1,1,1)
+    vYRate = np.arange(0,len(vRate),config.READERINTERVAL)
+    vAx.plot(vRate,vYRate)
+
     return output
 
