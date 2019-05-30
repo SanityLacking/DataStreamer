@@ -35,7 +35,7 @@ int dataRead(std::vector<std::string> &dataset, std::vector<std::string> &inputS
 			inputStack.push_back(dataset.front());
 			dataset.erase(dataset.begin());
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep
+		std::this_thread::sleep_for(std::chrono::microseconds(READERINTERVAL)); //portable threaded sleep
 	}
 
 	return 0;
@@ -50,7 +50,7 @@ int threadSum(int & x) {
 			std::lock_guard<std::mutex> guard(readerMutex);
 			x = x + 2;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep
+		std::this_thread::sleep_for(std::chrono::microseconds(READERINTERVAL)); //portable threaded sleep
 	}
 
 
@@ -67,7 +67,7 @@ int threadCounter(int & x, int & y) {
 			std::lock_guard<std::mutex> guard(readerMutex);
 			x = x + y;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep
+		std::this_thread::sleep_for(std::chrono::microseconds(READERINTERVAL)); //portable threaded sleep
 	}
 
 	return 0;
@@ -90,17 +90,18 @@ public:
 	std::deque<std::vector< std::string> >  getCurrentInput();
 	int getCurrentInputCount();
 	//int initReaders(int length, const char ** string_list);
-	int initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels = std::vector<std::string>(), std::vector<std::vector< std::string> >  X_test = std::vector<std::vector< std::string> >());
+	std::string initReaders(std::vector<std::vector< std::string> >  inputData, std::vector<std::string> labels = std::vector<std::string>(), std::vector<std::vector< std::string> >  X_test = std::vector<std::vector< std::string> >());
 	bool checkComplete();
 	std::string initReadersDebug(std::vector<std::vector< std::string> >  inputData);
 	std::string checkForThreadException();
 
-	 int READERINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
-	 int PROCESSINTERVAL = 0; //time to sleep for each processor in milliseconds aka 1000milli = 1second
-	 int LOADBALANCEINTERVAL = 100; //time to sleep for each datareader in milliseconds aka 1000milli = 1second
+	 int READERINTERVAL = 100000; //time to sleep for each datareader in microseconds aka 1000000 microseconds  = 1second
+	 int PROCESSINTERVAL = 0; //time to sleep for each processor in microseconds aka 1000000 microseconds = 1second
+	 int LOADBALANCEINTERVAL = 100000; //time to sleep for each datareader in microseconds aka 1000000 microseconds = 1second
 	 int MAXLOAD = 10; //number of waiting items before we need to start doing something about it.
 	 int READERCOUNT = 6;
-	 const int READERSLIMIT = 10000; 
+	 const int READERSLIMIT = 10000;  //hard cap on reader threads. this is to prevent a complete lock up of the system by creating too many threads.
+
 	 int LBMETHOD = 4; // what load balancing method to use 
 							//option 1, basic load shed, remove oldest elements to keep the input stack always below the MAXLOAD Limit.
 							//option 2, remove newest elements	
@@ -171,7 +172,7 @@ datasetStream::datasetStream()
 
 */
 
-int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, std::vector<std::string> labels, std::vector<std::vector< std::string> >  X_test)
+std::string datasetStream::initReaders(std::vector<std::vector< std::string> >  input, std::vector<std::string> labels, std::vector<std::vector< std::string> >  X_test)
 {
 	
 	//if X_test and y_test are empty, then only X and y are to be used to init.
@@ -204,6 +205,12 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, s
 	}
 	//input and labels are used without a training step. 							// TODO//
 	
+
+	// start run timer for Variable rate comparision	
+	auto now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now());
+	// Convert time_point to signed integral type
+	auto integral_duration = now.time_since_epoch().count();
+
 	//create thread of dataReaders
 	//datareaders each take a line of input and put it in the IN pile. 
 	// the loadbalancer makes sure the IN pile isn't too big. Load balancer is a separate thread that constantly monitors the IN pile.
@@ -225,7 +232,7 @@ int datasetStream::initReaders(std::vector<std::vector< std::string> >  input, s
 	std::thread processorThread(&datasetStream::processData, this, processMethod);
 	processorThread.detach();
 
-	return (int)dataset.size();
+	return std::to_string(integral_duration);
 }
 
 inline const char * const BoolToString(bool b)
@@ -283,7 +290,7 @@ std::string  datasetStream::initReadersDebug(std::vector<std::vector< std::strin
 	try
 	{
 		//std::thread thread2(threadCounter, std::ref(x1), std::ref(y1));
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 	
+		std::this_thread::sleep_for(std::chrono::microseconds(READERINTERVAL)); //portable threaded sleep 	
 		//thread2.join();
 	}
 	catch (const std::exception& ex)
@@ -291,8 +298,8 @@ std::string  datasetStream::initReadersDebug(std::vector<std::vector< std::strin
 		return ex.what();
 	}
 
-	int result = initReaders(string_list);
-	return "everything is fine";
+	//result = initReaders(string_list);
+	return "this is depricated don't use";
 }
 
 //simple function to test the class is working TEST FUNCTION
@@ -448,7 +455,7 @@ int datasetStream::processData(py::object processMethod) {
 				//Convert signed integral type to time_point
 				auto timeStart = std::stoll(row.back());
 				row.pop_back(); //TODO, make this optional to record the start time?
-				std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> dt{ std::chrono::milliseconds{timeStart} };
+				std::chrono::time_point<std::chrono::steady_clock, std::chrono::microseconds> dt{ std::chrono::microseconds{timeStart} };
 
 				py::gil_scoped_acquire acquire;
 				if (DEBUG == true)
@@ -466,6 +473,7 @@ int datasetStream::processData(py::object processMethod) {
 
 				//std::vector< std::string> result = row;			
 				//result.push_back(end);
+				result.push_back(std::to_string(timeStart));
 				result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count())); //process time
 				result.push_back(std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(end - dt).count())); //time from input to process finished
 				{
@@ -479,7 +487,7 @@ int datasetStream::processData(py::object processMethod) {
 				py::gil_scoped_acquire release;*/
 			}
 			ProcessComplete = true;
-			std::this_thread::sleep_for(std::chrono::milliseconds(PROCESSINTERVAL)); //portable threaded sleep 	
+			std::this_thread::sleep_for(std::chrono::microseconds(PROCESSINTERVAL)); //portable threaded sleep 	
 		}
 		catch (const std::exception& e)
 		{
@@ -587,7 +595,7 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 							}
 							continue;
 						}
-						auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+						auto now = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now());
 						// Convert time_point to signed integral type
 						auto integral_duration = now.time_since_epoch().count();
 						row.push_back(std::to_string(integral_duration));
@@ -609,7 +617,7 @@ int datasetStream::dataReader(std::deque<std::vector< std::string> > &dataset, s
 					py::print(e.what());
 					py::gil_scoped_acquire release;
 				}		
-			std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
+			std::this_thread::sleep_for(std::chrono::microseconds(READERINTERVAL)); //portable threaded sleep 		
 		}
 		//std::cout << "DataReader complete: " << std::to_string(threadID) << std::endl;
 		/*py::gil_scoped_acquire acquire;
@@ -637,7 +645,7 @@ int datasetStream::dataR(std::vector<std::vector< std::string> >  &dataset) {
 			inputStack.push_back(dataset.front());
 			dataset.erase(dataset.begin());
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(READERINTERVAL)); //portable threaded sleep 		
+		std::this_thread::sleep_for(std::chrono::microseconds(READERINTERVAL)); //portable threaded sleep 		
 	}
 	return 0;
 }

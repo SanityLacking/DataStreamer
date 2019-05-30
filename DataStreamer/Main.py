@@ -115,12 +115,28 @@ def startDataStream():
     print("csv read in: {} seconds".format(start_time - csv_start_time))
 
 
-    vRate=np.linspace(1,100,100)
-    vRate=np.append(vRate,np.linspace(100,1,100))
-    print(vRate)
-    ds.initialize(10) 
+    #### defining the variable input rates ####
+    ## pass through sin curve from 0 to 10. 
+    #vRate = np.linspace(0, 10, 1000)
+    #vRate = np.sin(vRate)
 
-    sent = ds.process(X_train, y_train, X_test)
+    ## pass through cos curve from 0 to 10. 
+    #vRate = np.linspace(0, 10, 1000)
+    #vRate = np.cos(vRate)
+
+    ## pass through steady rate of 10
+    #vRate = 10
+
+    ## create line from 1 - 100 and then back to 1
+    vRate=np.linspace(1,100,100)
+    #vRate=np.append(vRate,np.linspace(100,1,100))
+
+    if config.DEBUG:
+        print("vRate = {}".format(vRate))
+
+    ds.initialize(vRate) 
+
+    runStartTime = ds.process(X_train, y_train, X_test)
     #print("initReader: {} sent, {} recieved".format(len(inputFile),sent))
         
     #print(cppProcess.checkComplete())
@@ -162,13 +178,13 @@ def startDataStream():
 
     df_results['label'] = y_test
     #print(df_results.head())
-    df_results = df_results.rename(columns={ df_results.columns[0]: "predicted",df_results.columns[1]: "latency",df_results.columns[2]: "processTime",df_results.columns[3]: "Label"  })
+    df_results = df_results.rename(columns={ df_results.columns[0]: "predicted",df_results.columns[1]: "readInTime",df_results.columns[2]: "processTime",df_results.columns[3]: "latency",df_results.columns[4]: "Label"  })
     #print("return results: {}".format(results))    
     print("return results: {} rows processed".format(len(df_results)))    
     print(df_results.head())    
 
     print(DS.caclulateErr(df_results))
-    print(DS.caclulateLatency(df_results, vRate))
+    #print(DS.caclulateLatency(df_results, vRate))
 
     
     saveResults(df_results)
