@@ -14,7 +14,7 @@ class Processor:
 
     def __init__(self, *args, **kwargs):
         print("class init")
-        self.knn = KNeighborsClassifier(n_neighbors=3)
+        self.knn = KNeighborsClassifier(n_neighbors=20)
         
         return super().__init__(*args, **kwargs)
     #processor called by c++ to complete the processing.    

@@ -217,6 +217,11 @@ std::string datasetStream::initReaders(std::vector<std::vector< std::string> >  
 	// then then the process data thread takes input from the IN pile and processes it and puts it in the OUT pile.
 	// getResults function returns any data that is in the OUT pile to the python caller for them to display.
 
+	// start processor thread
+	std::thread processorThread(&datasetStream::processData, this, processMethod);
+	processorThread.detach();
+
+
 	// start worker threads to share the dataset queue and move it to the input queue
 	for (int i = 1; i <= READERCOUNT; i++) {
 		std::thread dataReaderThread(&datasetStream::dataReader, this, std::ref(datasetQueue), std::ref(inputQueue), vQueue, i);
@@ -228,9 +233,7 @@ std::string datasetStream::initReaders(std::vector<std::vector< std::string> >  
 	std::thread loadBalancerThread(&datasetStream::loadbalance, this);
 	loadBalancerThread.detach();
 
-	// start processor thread
-	std::thread processorThread(&datasetStream::processData, this, processMethod);
-	processorThread.detach();
+	
 
 	return std::to_string(integral_duration);
 }
