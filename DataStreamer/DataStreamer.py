@@ -115,3 +115,70 @@ def caclulateLatency(results, vRate=None, Print=False):
 
     return output
 
+
+def expandVRate(vRate, data):
+    valSum=0;
+    newVRate =pd.DataFrame()
+    addonRate = pd.DataFrame()
+    newVRate['vRate'] = vRate
+    newVRate['vInterval'] = np.nan
+    for i in range(len(vRate)):
+#         print(i)
+        newVRate['vInterval'][i] = valSum
+#         print("val:{}".format(newVRate['vRate'][i]))
+        valSum += newVRate['vRate'][i]
+    lastRow = newVRate.iloc[-1]
+    print("lastrow {} datasize {}".format(lastRow['vInterval'],len(data)))
+    dataSize = len(data)
+    if lastRow['vInterval'] < dataSize:        
+        for i in range(abs(len(newVRate) - len(data))):
+    #   row = {"vRate":lastRow['vRate'],"vIntervnal":valSum}
+            addonRate = addonRate.append( {"vRate":lastRow['vRate'],"vInterval":valSum}, ignore_index=True)
+            valSum += addonRate['vRate'][i]    
+    elif lastRow['vInterval'] > len(data):
+        #loop through the vRate to find the point that matches the size of results. slice the vRate at that point.
+        #actually just c
+#       print("newRate {}".format(newVRate))
+        maxLen = len(data)        
+        for i in range(maxLen):            
+            if newVRate['vInterval'][i] > maxLen:
+                #print("larger then")
+                #slice here and add new ending point of the vRate with interval equal to maxlen
+                newVRate = newVRate.iloc[0:i]
+                #print(newVRate)
+                newVRate = newVRate.append({"vRate":newVRate['vRate'][i-1],"vInterval":maxLen}, ignore_index=True)
+                break
+            elif newVRate['vInterval'][i] == maxLen:
+                #print("same size")
+                #slice directly here
+                newVRate = newVRate.iloc[0:i]    
+                break
+    return newVRate 
+
+
+def visualizeResults(vRate, data):
+    fig, ax1 = plt.subplots()
+
+    # ax = plt.axes()
+    color = 'tab:blue'
+    ax1.set_xlabel('data inputs')
+    ax1.set_ylabel('process time (s)')
+    lns1 = ax1.plot(data['latency'].astype(np.float64) /1000000)
+    lns2 = ax1.plot(data['processTime'].astype(np.float64)/1000000)
+    ax1.tick_params(axis='y')
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    color = 'tab:green'
+    ax2.set_xlabel('time (s)')
+    ax2.set_ylabel('Input Rate (data points per interval)', color=color)
+    lns3 = ax2.plot(vRate['vInterval'],vRate['vRate'], color=color, linestyle = 'dashed')
+    ax2.tick_params(axis='y', labelcolor=color)
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+
+    ## added these three lines
+    lns = lns1+lns2+lns3
+    labs = [l.get_label() for l in lns]
+    ax1.legend(lns, labs, loc=0)
+
+    plt.plot()
+    return 0

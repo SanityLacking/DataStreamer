@@ -186,6 +186,9 @@ def startDataStream():
     print(DS.caclulateErr(df_results))
     #print(DS.caclulateLatency(df_results, vRate))
 
+    newVRate = DS.expandVRate(vRate, df_results)
+    print(df_results.dtypes)
+    DS.visualizeResults(newVRate, df_results)
     
     saveResults(df_results)
     input()

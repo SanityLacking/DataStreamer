@@ -168,7 +168,7 @@ class Branch(Node):
         self.range = node.range[:]
         self.centre = node.centre[:]
     
-    def size():        
+    def size(self):        
         return len(self.range)
 
     # choose a child which has a shortest distance from a given point

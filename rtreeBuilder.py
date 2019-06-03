@@ -13,12 +13,25 @@ import sys
 import Rtree
 #import scanRange
 
+# read a single point from a line of text
+def getPoint(data):
+    # split the string with whitespace
+    content = nextLine.strip('\n').split(' ')
+    while content.count('') != 0:
+        content.remove('')
+    # point id
+    ident = int(content[0])
+    #point id and coordinates
+    x = float(content[1])
+    y = float(content[2])
+    
+    return [ident, x, y]
 
 class RtreeConstructor:
 
 
     root = Rtree.Branch
-
+    Bvalue = 25
     def __init__(self, *args, **kwargs):       
         print("Rtree init")
         #self.Rtree = buildRtree()
@@ -30,7 +43,7 @@ class RtreeConstructor:
         return 0 
 
     def handleOverFlow(self, node):
-        global root
+        #global root
         global Bvalue
     
         # split node into two new nodes
@@ -69,10 +82,9 @@ class RtreeConstructor:
             pass
 
     def buildRtree(self, dataset, *B):             
-    
-        Bvalue = 25
+           
         if len(B) == 1 and B[0] != None:
-            Bvalue = B[0]
+            self.Bvalue = B[0]
         
         #f = open(dataSetName, 'rt')
         #nextLine = f.readline()
@@ -81,23 +93,25 @@ class RtreeConstructor:
         #size = int(nextLine.strip('\n'))
         # read the first point and build a root
         #nextLine = f.readline()
-        #point = Rtree.Point(scanRange.getPoint(nextLine))
-        #root = Rtree.Leaf(Bvalue, 1, point)
-        #root.addChild(point)
+
+        
+        
+        
     
+
+        if len(dataset) > 0:
+            dims = dataset.shape[1]
+            point = Rtree.Point(getPoint(dataset[0]))
+            self.root = Rtree.Leaf(Bvalue, 1, point)
         # add the remained points
         #nextLine = f.readline()
-        for data in dataset:
-            if self.root.size() ==0:
-                point = Rtree.Point(scanRange.getPoint(nextLine))
-                self.root = Rtree.Leaf(Bvalue, 1, point)
-                self.root.addChild(point)
-            #while nextLine != '':
-            point = Rtree.Point(scanRange.getPoint(data))
-            insert(self.root, point)
-            #nextLine = f.readline()
+        if len(dataset) > 2:
+            for i, data in enumerate(dataset, start=1): #loop through rest of data from position 1                                
+                point = Rtree.Point(getPoint(data))
+                insert(self.root, point)
 
-        #f.close()
+
+
         print('R-tree has been built. B is:', Bvalue,'Highest level is:',root.level)
         return self.root
 

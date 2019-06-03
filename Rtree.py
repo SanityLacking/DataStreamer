@@ -162,14 +162,15 @@ class Leaf(Node):
                 
 
 # a branch node which contains only nodes
-class Branch(Node):
+class Branch(Node):    
     def __init__(self, Bvalue, level, node):
         super().__init__(Bvalue, level)
         self.range = node.range[:]
         self.centre = node.centre[:]
     
-    def size():        
-        return len(self.range)
+    def size(self):        
+        size = len(self.range)
+        return size
 
     # choose a child which has a shortest distance from a given point
     def chooseChild(self, point):
