@@ -115,7 +115,6 @@ def caclulateLatency(results, vRate=None, Print=False):
 
     return output
 
-
 def expandVRate(vRate, data):
     valSum=0;
     newVRate =pd.DataFrame()
@@ -131,35 +130,45 @@ def expandVRate(vRate, data):
     print("lastrow {} datasize {}".format(lastRow['vInterval'],len(data)))
     dataSize = len(data)
     if lastRow['vInterval'] < dataSize:        
-        for i in range(abs(len(newVRate) - len(data))):
-    #   row = {"vRate":lastRow['vRate'],"vIntervnal":valSum}
-            addonRate = addonRate.append( {"vRate":lastRow['vRate'],"vInterval":valSum}, ignore_index=True)
-            valSum += addonRate['vRate'][i]    
+        print("smaller")
+#         if lastRow['vRate'] > 0:
+#             while valSum < dataSize:
+#                 valSum += lastRow['vRate']
+#                 addonRate = addonRate.append( {"vRate":lastRow['vRate'],"vInterval":valSum}, ignore_index=True)            
+#         else:
+#             addonRate = addonRate.append( {"vRate":lastRow['vRate'],"vInterval":dataSize}, ignore_index=True)            
+        addonRate = addonRate.append( {"vRate":lastRow['vRate'],"vInterval":dataSize}, ignore_index=True)            
+        newVRate = newVRate.append(addonRate)
+
+        
     elif lastRow['vInterval'] > len(data):
         #loop through the vRate to find the point that matches the size of results. slice the vRate at that point.
         #actually just c
+        print("larger")
 #       print("newRate {}".format(newVRate))
         maxLen = len(data)        
         for i in range(maxLen):            
             if newVRate['vInterval'][i] > maxLen:
-                #print("larger then")
+                print("larger then")
                 #slice here and add new ending point of the vRate with interval equal to maxlen
                 newVRate = newVRate.iloc[0:i]
-                #print(newVRate)
+                print(newVRate)
                 newVRate = newVRate.append({"vRate":newVRate['vRate'][i-1],"vInterval":maxLen}, ignore_index=True)
                 break
             elif newVRate['vInterval'][i] == maxLen:
-                #print("same size")
+                print("same size")
                 #slice directly here
                 newVRate = newVRate.iloc[0:i]    
-                break
+                break            
     return newVRate 
 
-
-def visualizeResults(vRate, data):
+def visualizeResults(vRate, data, fileName = ""):
     fig, ax1 = plt.subplots()
 
     # ax = plt.axes()
+    if fileName != "":
+        plt.title(fileName)
+        #fig.num=fileName
     color = 'tab:blue'
     ax1.set_xlabel('data inputs')
     ax1.set_ylabel('process time (s)')

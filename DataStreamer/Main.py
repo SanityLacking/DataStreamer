@@ -37,7 +37,7 @@ def saveResults(data, filename=None):
     if filename == None:
         filename = time.strftime("%Y%m%d-%H%M%S") + '.csv'
     data.to_csv(config.resultsFilePath+filename, index=False)
-    return 0
+    return filename
 
 
 
@@ -128,9 +128,14 @@ def startDataStream():
     #vRate = 10
 
     ## create line from 1 - 100 and then back to 1
-    vRate=np.linspace(1,100,100)
+    #vRate=np.linspace(1,100,100)
     #vRate=np.append(vRate,np.linspace(100,1,100))
-
+    vRate=np.linspace(1,10,100)
+    vRate = np.append(vRate, np.linspace(10,1,100))
+    vRate = np.append(vRate,np.linspace(1,10,100))
+    vRate = np.append(vRate,np.linspace(10,1,100))
+    vRate = np.append(vRate,np.linspace(1,10,100))
+    #vRate = np.append(vRate,np.linspace(10,1,100))
     if config.DEBUG:
         print("vRate = {}".format(vRate))
 
@@ -185,12 +190,12 @@ def startDataStream():
 
     print(DS.caclulateErr(df_results))
     #print(DS.caclulateLatency(df_results, vRate))
-
+    
+    fileName = saveResults(df_results)
     newVRate = DS.expandVRate(vRate, df_results)
     print(df_results.dtypes)
-    DS.visualizeResults(newVRate, df_results)
+    DS.visualizeResults(newVRate, df_results, fileName)
     
-    saveResults(df_results)
     input()
 
         
