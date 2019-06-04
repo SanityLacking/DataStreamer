@@ -36,6 +36,9 @@
     <Compile Include="rtreeBuilder.py" />
     <Compile Include="rtreeNN.py" />
     <Compile Include="rtreeRange.py" />
+    <Compile Include="timeSeries.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|py36" />
