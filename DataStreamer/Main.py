@@ -20,6 +20,7 @@ import seaborn as sns
 import matplotlib
 
 import config
+import timeSeries
 import DataStreamer as DS   # the wrapper for the datastreamer
 
 
